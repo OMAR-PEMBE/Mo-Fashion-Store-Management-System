@@ -29,7 +29,20 @@ limits, reservation ownership and idempotent retries using MySQL row locks.
 See the [Phase 6 report](docs/PHASE_6.md). New variants start with zero stock.
 Supplier purchases now support drafts, review, confirmation, stock receiving,
 weighted-average costs and supplier history. Confirmation is atomic and rejects
-duplicates. See the [Phase 7 report](docs/PHASE_7.md). Opening stock follows next.
+duplicates. See the [Phase 7 report](docs/PHASE_7.md). Administrators can now enter
+opening stock once per unused variant, with review, initial costing and audit
+history. See the [Phase 8 report](docs/PHASE_8.md). Customer profiles now include
+search, quick registration, preferences, explicit marketing consent and duplicate
+contact warnings. See the [Phase 9 report](docs/PHASE_9.md). Sales and automatic
+customer statistics are now connected through the counter-sales workflow.
+Point of sale supports carts, walk-ins, registered customers, payment recording,
+review, stock deduction, historical cost snapshots and sales history. See the
+[Phase 10 report](docs/PHASE_10.md). Completed-sale cancellation remains disabled
+pending approval of stock-return and refund rules.
+
+Orders now support registered customers, stock reservations, manual payment,
+sale conversion, unpaid cancellation and delivery tracking. Open **Orders** in
+the sidebar. See the [Phase 11 report](docs/PHASE_11.md).
 
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
 is not yet supplied; the UI uses the approved [UI.md](<Markdown Files/UI.md>) design tokens.

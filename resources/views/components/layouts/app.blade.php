@@ -43,6 +43,18 @@
                 @can('purchases.manage')
                     <a href="{{ route('purchases.index') }}" @if(request()->routeIs('purchases.*')) aria-current="page" @endif @class(['mt-1 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('purchases.*'), 'hover:bg-white/10' => !request()->routeIs('purchases.*')])>Purchases</a>
                 @endcan
+            @if(auth()->user()?->role?->slug === 'administrator' && auth()->user()->hasPermission('inventory.adjust'))
+                <a href="{{ route('opening-stock.index') }}" @if(request()->routeIs('opening-stock.*')) aria-current="page" @endif @class(['mt-1 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('opening-stock.*'), 'hover:bg-white/10' => !request()->routeIs('opening-stock.*')])>Opening stock</a>
+            @endif
+            @can('customers.create')
+                <a href="{{ route('customers.index') }}" @if(request()->routeIs('customers.*')) aria-current="page" @endif @class(['mt-1 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('customers.*'), 'hover:bg-white/10' => !request()->routeIs('customers.*')])>Customers</a>
+            @endcan
+            @can('sales.create')
+                <div><a href="{{ route('sales.create') }}" @if(request()->routeIs('sales.create', 'sales.review')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('sales.create', 'sales.review'), 'hover:bg-white/10' => !request()->routeIs('sales.create', 'sales.review')])>Point of sale</a><a href="{{ route('sales.index') }}" class="block rounded-xl px-4 py-3 text-sm font-semibold hover:bg-white/10">Sales history</a></div>
+            @endcan
+            @can('orders.create')
+                <a href="{{ route('orders.index') }}" @if(request()->routeIs('orders.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('orders.*'), 'hover:bg-white/10' => !request()->routeIs('orders.*')])>Orders</a>
+            @endcan
             </nav>
             <div class="hidden px-9 py-8 text-xs leading-6 text-white/60 lg:block">Mo Fashion Store<br>Business Management System</div>
         </aside>

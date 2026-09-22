@@ -10,7 +10,7 @@ class Permissions
         'purchases.manage',
         'products.view', 'products.create', 'products.update', 'products.view_cost',
         'inventory.view', 'inventory.adjust',
-        'customers.create', 'sales.create', 'sales.view_all', 'orders.create',
+        'customers.create', 'customers.manage', 'sales.create', 'sales.view_all', 'sales.cancel', 'orders.create', 'orders.manage',
         'refunds.create', 'refunds.approve', 'reports.view', 'users.manage',
     ];
 

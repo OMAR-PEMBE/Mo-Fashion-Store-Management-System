@@ -1,4 +1,25 @@
 // Livewire initializes its bundled Alpine instance through @livewireScripts.
+window.saleForm = (customer, lines, lookupUrl) => ({
+    customer, lines, query: '', customersQuery: '', results: [], customers: [], error: '', searchRequest: 0,
+    async search(kind) {
+        const request = ++this.searchRequest;
+        this.error = '';
+        try {
+            const response = await fetch(lookupUrl + '?' + new URLSearchParams({kind, q: kind === 'variant' ? this.query : this.customersQuery}), {headers: {Accept: 'application/json'}});
+            if (!response.ok) throw new Error();
+            const results = await response.json();
+            if(request !== this.searchRequest) return;
+            if(kind === 'variant') this.results = results; else this.customers = results;
+            if(!results.length) this.error = 'No matches. Try another name or code.';
+        } catch { this.error = 'Search failed. Please try again.'; }
+    },
+    add(result) {
+        if(result.available < 1) return;
+        const line = this.lines.find(line => Number(line.product_variant_id) === result.id);
+        if(line) line.quantity = String(Number(line.quantity) + 1);
+        else if(this.lines.length < 100) this.lines.push({product_variant_id:result.id,label:result.label,quantity:'1',unit_price:result.unit_price,discount_amount:'0.00'});
+    },
+});
 window.purchaseForm = (supplier, lines, lookupUrl) => ({
     supplier: { ...supplier, query: '', results: [], error: '', request: 0 },
     lines: lines.map(line => ({ ...line, key: crypto.randomUUID(), query: '', results: [], error: '', request: 0 })),

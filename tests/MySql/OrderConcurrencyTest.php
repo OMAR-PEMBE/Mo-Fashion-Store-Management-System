@@ -7,7 +7,9 @@ use App\Models\Category;
 use App\Models\Inventory;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\CustomerService;
 use App\Services\InventoryService;
+use App\Services\OrderService;
 use App\Services\ProductCatalogueService;
 use App\Support\InventoryContext;
 use Database\Seeders\DatabaseSeeder;
@@ -18,18 +20,15 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
-class InventoryConcurrencyTest extends TestCase
+class OrderConcurrencyTest extends TestCase
 {
     public static function races(): array
     {
         return [
-            'no overselling' => ['decrease', 5, 4, false, 1, 0, 1],
-            'no over-reservation' => ['reserve', 5, 4, false, 5, 4, 1],
-            'no lost updates' => ['increase', 0, 3, false, 6, 0, 2],
-            'duplicate retry' => ['increase', 0, 3, true, 3, 0, 2],
-            'duplicate opening setup' => ['opening', 0, 3, false, 3, 0, 1],
-            'counter sale final item' => ['counter', 1, 1, false, 0, 0, 1],
-            'counter sale retry' => ['counter', 2, 1, true, 1, 0, 2],
+            'two orders final stock' => ['orderconfirm', 1, 1, false, 1, 1, 1],
+            'duplicate confirmation' => ['orderconfirm', 1, 1, true, 1, 1, 1],
+            'duplicate conversion' => ['orderconvert', 1, 1, true, 0, 0, 1],
+            'duplicate cancellation' => ['ordercancel', 1, 1, true, 1, 0, 1],
         ];
     }
 
@@ -57,12 +56,29 @@ class InventoryConcurrencyTest extends TestCase
             if ($initial) {
                 app(InventoryService::class)->increase($variant, $initial, Type::OpeningBalance, new InventoryContext($actor, $token.':initial', 'concurrency_test', 1));
             }
+            $customer = app(CustomerService::class)->save(['full_name' => 'Concurrency customer '.$token], $actor);
+            $orders = [];
+            foreach (['a', 'b'] as $worker) {
+                if ($worker === 'b' && $sameKey) {
+                    $orders[$worker] = $orders['a'];
+
+                    continue;
+                }
+                $orders[$worker] = app(OrderService::class)->create(['request_key' => $token.':'.$worker, 'customer_id' => $customer->id,
+                    'items' => [['product_variant_id' => $variant->id, 'quantity' => 1, 'unit_price' => '100']]], $actor);
+            }
+            if ($mode !== 'orderconfirm') {
+                app(OrderService::class)->confirm($orders['a'], $actor);
+                if ($mode === 'orderconvert') {
+                    app(OrderService::class)->markPaid($orders['a'], ['payment_method' => 'CASH'], $actor);
+                }
+            }
             // Fixtures are committed so independent worker connections can see them.
             DB::beginTransaction();
             DB::table('products')->where('id', $product->id)->lockForUpdate()->first();
             foreach (['a', 'b'] as $worker) {
                 $process = new Process([PHP_BINARY, base_path('tests/Support/InventoryRaceWorker.php'), (string) $variant->id,
-                    (string) $actor->id, $token.':'.($sameKey ? 'same' : $worker), $directory, $worker, $mode, (string) $quantity], base_path());
+                    (string) $actor->id, $token.':'.($sameKey ? 'same' : $worker), $directory, $worker, $mode, (string) $orders[$worker]->id], base_path());
                 $process->setTimeout(30);
                 $process->start();
                 $processes[] = $process;
@@ -80,19 +96,15 @@ class InventoryConcurrencyTest extends TestCase
                 $results[] = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
             }
             $this->assertCount($successes, array_filter($results, fn ($result) => $result['status'] === 'success'));
+            $this->assertCount(1, array_filter($results, fn ($result) => $result['status'] === 'rejected'));
             if ($sameKey) {
-                $this->assertSame($results[0]['movement_id'], $results[1]['movement_id']);
+                $this->assertCount(1, array_filter($results, fn ($result) => ($result['code'] ?? null) === 409));
             }
             $balance = Inventory::where('product_variant_id', $variant->id)->firstOrFail();
             $this->assertSame($physical, $balance->physical_quantity);
             $this->assertSame($reserved, $balance->reserved_quantity);
             $this->assertSame($physical - $reserved, $balance->available_quantity);
-            if ($mode === 'opening') {
-                $this->assertSame('25.00', $variant->fresh()->weighted_average_cost);
-                $this->assertSame(1, DB::table('audit_logs')->where('action', 'OPENING_STOCK')->where('entity_id', $variant->id)->count());
-                $this->assertCount(1, array_filter($results, fn ($result) => ($result['code'] ?? null) === 409));
-            }
-            $this->assertSame(($initial ? 1 : 0) + ($sameKey ? 1 : $successes), $variant->movements()->count());
+            $this->assertSame(($mode === 'orderconfirm' ? 2 : 3), $variant->movements()->count());
             try {
                 DB::table('inventories')->where('id', $balance->id)->update(['reserved_quantity' => $physical + 1]);
                 $this->fail('MySQL must reject reserved stock exceeding physical stock.');
@@ -114,6 +126,15 @@ class InventoryConcurrencyTest extends TestCase
                 DB::table('audit_logs')->where('entity_type', 'sale')->whereIn('entity_id', $saleIds)->delete();
                 DB::table('sale_items')->whereIn('sale_id', $saleIds)->delete();
                 DB::table('sales')->whereIn('id', $saleIds)->delete();
+                $orderIds = DB::table('order_items')->where('product_variant_id', $variant->id)->pluck('order_id');
+                DB::table('audit_logs')->where('entity_type', 'order')->whereIn('entity_id', $orderIds)->delete();
+                DB::table('stock_reservations')->whereIn('order_id', $orderIds)->delete();
+                DB::table('order_items')->whereIn('order_id', $orderIds)->delete();
+                DB::table('orders')->whereIn('id', $orderIds)->delete();
+                if (isset($customer)) {
+                    DB::table('audit_logs')->where('entity_type', 'customer')->where('entity_id', $customer->id)->delete();
+                    DB::table('customers')->where('id', $customer->id)->delete();
+                }
                 DB::table('audit_logs')->where('entity_type', 'product_variant')->where('entity_id', $variant->id)->delete();
                 DB::table('inventory_movements')->where('product_variant_id', $variant->id)->delete();
                 DB::table('inventories')->where('product_variant_id', $variant->id)->delete();

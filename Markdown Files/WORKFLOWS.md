@@ -245,6 +245,13 @@ Weighted Average Cost = TZS 25,000
 
 Opening-stock action shall be audited.
 
+Phase 8 implementation: setup is permitted once per active variant, before any
+inventory movement, with physical/reserved quantities and existing WAC all zero.
+This prevents opening initialization from overwriting costs after trading has
+started. Duplicate or no-longer-eligible submissions return 409. Administrator
+role and inventory.adjust permission are both required. Cost, balance, movement
+and audit writes commit atomically; a failed attempt may be retried.
+
 ---
 
 # 8. Supplier Stock Purchase Workflow
@@ -1980,6 +1987,19 @@ Then coding can begin with a controlled development sequence.
 ---
 
 # 88. Document Status
+
+### Phase 11 implementation clarification
+
+Orders require a registered customer. Manual full-payment recording and sale
+conversion are separate actions. Conversion completes the order's reservations
+and creates one sale; fulfilment cannot begin before that sale exists. New order
+creation is retry-safe; repeated confirmation, payment, conversion, cancellation
+or invalid fulfilment transitions are rejected without repeating stock changes.
+Unpaid cancellation releases only the cancelled order's reservation. Paid-order
+cancellation remains blocked pending approved return/refund rules. Reservation
+expiry is not automated. Existing paid reservations can still be fulfilled after
+reference archival. The order salesperson retains sale attribution, while audits
+identify each operator. See docs/PHASE_11.md for verification and limitations.
 
 **Status: Core Business and System Workflows Locked**
 

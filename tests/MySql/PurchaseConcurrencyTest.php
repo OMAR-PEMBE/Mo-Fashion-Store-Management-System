@@ -65,7 +65,7 @@ class PurchaseConcurrencyTest extends TestCase
             DB::table('products')->where('id', $product->id)->lockForUpdate()->first();
             foreach (['a', 'b'] as $worker) {
                 $process = new Process([PHP_BINARY, base_path('tests/Support/InventoryRaceWorker.php'), (string) $variant->id,
-                    (string) $actor->id, $token.':'.$worker, $directory, $worker, ($scenario === 'sale' && $worker === 'b') ? 'decrease' : 'confirm', (string) (($scenario === 'sale' && $worker === 'b') ? 4 : ($worker === 'a' ? $first->id : $second->id))], base_path());
+                    (string) $actor->id, $token.':'.$worker, $directory, $worker, ($scenario === 'sale' && $worker === 'b') ? 'counter' : 'confirm', (string) (($scenario === 'sale' && $worker === 'b') ? 4 : ($worker === 'a' ? $first->id : $second->id))], base_path());
                 $process->setTimeout(30);
                 $process->start();
                 $processes[] = $process;
@@ -124,6 +124,10 @@ class PurchaseConcurrencyTest extends TestCase
                 DB::table('suppliers')->where('id', $supplier->id)->delete();
             }
             if ($variant) {
+                $saleIds = DB::table('sale_items')->where('product_variant_id', $variant->id)->pluck('sale_id');
+                DB::table('audit_logs')->where('entity_type', 'sale')->whereIn('entity_id', $saleIds)->delete();
+                DB::table('sale_items')->whereIn('sale_id', $saleIds)->delete();
+                DB::table('sales')->whereIn('id', $saleIds)->delete();
                 DB::table('inventory_movements')->where('product_variant_id', $variant->id)->delete();
                 DB::table('inventories')->where('product_variant_id', $variant->id)->delete();
                 DB::table('product_variants')->where('id', $variant->id)->delete();

@@ -957,6 +957,12 @@ unless specifically needed.
 
 # 37. sales
 
+Phase 10 implementation adds unique `request_key` (VARCHAR(100)) and `request_hash`
+(CHAR(64)) for actor-bound, payload-checked idempotency. Identical retries return
+the original sale; changed payloads using the same key receive 409. `order_id`
+is nullable and currently has no foreign key until the orders table arrives in
+Phase 11. Counter sales always leave it null.
+
 Stores completed or cancelled sales.
 
 ## Fields
@@ -3547,6 +3553,18 @@ It should define:
 ---
 
 # 144. Document Status
+
+### Phase 11 implementation notes
+
+Orders add request_key/request_hash for safe creation retries and manual
+payment_method/payment_reference fields. These record staff-entered full payment;
+they do not represent verified provider transactions. The orders migration adds
+the sales.order_id foreign key and unique constraint (multiple NULL counter
+sales remain valid), unique order/variant lines and one reservation per order
+item. ORDER numbering uses the existing document_sequences allocator.
+Reservations retain status/timestamps permanently; expires_at is unused until an
+expiry policy is approved. New orders do not update customer purchase statistics.
+Only successful sale conversion does so. See docs/PHASE_11.md.
 
 **Status: Database Design Ready for API and Implementation Planning**
 

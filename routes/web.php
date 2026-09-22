@@ -2,11 +2,15 @@
 
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\OpeningStockController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferenceDataController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +30,27 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::middleware('can:orders.create')->group(function () {
+        Route::get('/orders/lookup', [SaleController::class, 'lookup'])->name('orders.lookup');
+        Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);
+        foreach (['confirm', 'paid', 'convert', 'cancel', 'status'] as $action) {
+            Route::post('/orders/{order}/'.$action, [OrderController::class, $action])->name('orders.'.$action);
+        }
+    });
+    Route::middleware('can:sales.create')->group(function () {
+        Route::get('/pos', [SaleController::class, 'create'])->name('sales.create');
+        Route::get('/pos/lookup', [SaleController::class, 'lookup'])->name('sales.lookup');
+        Route::post('/pos/review', [SaleController::class, 'review'])->name('sales.review');
+        Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
+        Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
+        Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+        Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
+    });
+    Route::resource('customers', CustomerController::class)->except('destroy')->middleware('can:customers.create');
+    Route::get('/opening-stock', [OpeningStockController::class, 'index'])->name('opening-stock.index');
+    Route::get('/opening-stock/{variant}', [OpeningStockController::class, 'create'])->name('opening-stock.create');
+    Route::post('/opening-stock/{variant}/review', [OpeningStockController::class, 'review'])->name('opening-stock.review');
+    Route::post('/opening-stock/{variant}/confirm', [OpeningStockController::class, 'confirm'])->name('opening-stock.confirm');
     Route::middleware('can:purchases.manage')->group(function () {
         Route::get('/purchases/lookup', [PurchaseController::class, 'lookup'])->name('purchases.lookup');
         Route::post('/purchases/{purchase}/confirm', [PurchaseController::class, 'confirm'])->name('purchases.confirm');

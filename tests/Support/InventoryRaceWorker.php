@@ -1,11 +1,15 @@
 <?php
 
 use App\Enums\InventoryMovementType;
+use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Purchase;
 use App\Models\User;
 use App\Services\InventoryService;
+use App\Services\OpeningStockService;
+use App\Services\OrderService;
 use App\Services\PurchaseService;
+use App\Services\SaleService;
 use App\Support\InventoryContext;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +47,28 @@ try {
     $context = new InventoryContext($actor, $key, 'concurrency_test', 1);
     $service = app(InventoryService::class);
     file_put_contents($resolved.'/'.$worker.'.attempting', 'attempting');
+    if (in_array($mode, ['orderconfirm', 'orderconvert', 'ordercancel'])) {
+        $orders = app(OrderService::class);
+        $order = Order::findOrFail((int) $quantity);
+        $result = match ($mode) {
+            'orderconfirm' => $orders->confirm($order, $actor),
+            'orderconvert' => $orders->convertToSale($order, $actor),
+            'ordercancel' => $orders->cancel($order, $actor, 'Concurrency test'),
+        };
+        echo json_encode(['status' => 'success', 'movement_id' => $result->id]);
+        exit(0);
+    }
+    if ($mode === 'counter') {
+        $sale = app(SaleService::class)->completeSale(['request_key' => $key, 'payment_method' => 'CASH',
+            'items' => [['product_variant_id' => $variant->id, 'quantity' => (int) $quantity, 'unit_price' => '100.00']]], $actor);
+        echo json_encode(['status' => 'success', 'movement_id' => $sale->id]);
+        exit(0);
+    }
+    if ($mode === 'opening') {
+        $movement = app(OpeningStockService::class)->confirm($variant, ['quantity' => (int) $quantity, 'unit_cost' => '25.00'], $actor);
+        echo json_encode(['status' => 'success', 'movement_id' => $movement->id]);
+        exit(0);
+    }
     if ($mode === 'confirm') {
         $purchase = app(PurchaseService::class)->confirm(Purchase::findOrFail((int) $quantity), $actor, 1);
         echo json_encode(['status' => 'success', 'movement_id' => $purchase->id]);

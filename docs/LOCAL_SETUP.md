@@ -256,3 +256,104 @@ Salespeople cannot access purchase costs or purchasing actions.
 Payment status is informational only; selecting Paid does not verify payment or
 create accounting entries. Supplier credit/payables and confirmed-purchase reversal
 policy remain TBD. Opening existing store stock is the next implementation phase.
+
+## Opening stock (Phase 8)
+
+Refresh the application and sign in as an administrator with inventory adjustment
+permission. No new migration is needed for this phase.
+
+1. Open **Opening stock** and search for an unused product variant.
+2. Select **Enter opening stock**.
+3. Enter the physical quantity already in your store and the unit buying cost.
+4. Select **Review opening stock**, check the values, then **Confirm opening stock**.
+
+Confirmation initializes stock and weighted-average cost, creates an
+OPENING_BALANCE movement and records an audit entry. View the result through
+**Inventory → Movements**. Zero unit cost is allowed; quantity must be positive.
+
+Only active variants with zero stock, zero cost and no movement history qualify.
+Once a variant has had any stock activity, opening setup is blocked even if its
+stock later returns to zero. Use Purchases for new deliveries. Opening records
+cannot be edited or repeated here; a future authorized adjustment/reversal workflow
+must handle corrections. Salespeople cannot access this workflow, even if granted
+the general inventory adjustment permission.
+
+## Customers (Phase 9)
+
+Run `& '.tools/php/php.exe' artisan migrate` after pulling this phase. Administrators
+receive the new customer-management permission; existing salesperson registration
+permission allows browsing and creating profiles.
+
+Open **Customers → Add customer** for the full profile or **Quick create** for a
+short registration modal. Full name is required. Phone, WhatsApp, location, notes,
+preferred size/colour and category preferences are optional. Marketing consent is
+off by default; check it only when the customer explicitly agrees.
+
+Search by name, customer code, phone or WhatsApp number. Formatting separators are
+removed from contact numbers, and leading `00` is treated as an international
+prefix. Local numbers are not automatically converted to a country code, so use
+a consistent format. Matching phone/WhatsApp contacts produce a warning, including
+inactive/archived profiles. Search existing records first; acknowledge the warning
+only when a separate profile is appropriate (for example a shared family number).
+
+Administrators can edit profiles, withdraw consent, deactivate and reactivate
+customers. Salespeople can register and view them but cannot edit existing profiles.
+No delete action is exposed. Historical preferences may be retained when reference
+categories, sizes or colours become inactive.
+
+Statistics start at zero with no purchase dates. They cannot be entered manually;
+the sales phase will update them from completed transactions. History is explicitly
+labelled as pending sales integration. Walk-in sales will use a null customer ID;
+do not create dummy walk-in customer profiles. There is no customer login or
+marketing-message sending in this phase.
+
+## Counter sales / POS (Phase 10)
+
+Run `& '.tools/php/php.exe' artisan migrate` after pulling this phase and rebuild
+assets using the local Node toolchain. Refresh the app and open **Point of sale**.
+
+1. Search by product name or SKU, then select a variant to add it to the cart.
+2. Enter the quantity and check the unit selling price. A line discount is the
+   total discount for that entire line, not a per-unit discount.
+3. Leave the customer as **Walk-in**, or search and choose an active customer.
+   Registration can be opened in a separate tab so the cart remains available.
+4. Select the manually collected payment method and optional reference/notes.
+5. Choose **Review sale total**. Use **Back to cart** to correct details.
+6. After collecting payment outside the system, check the acknowledgement and
+   choose **Complete sale**. Inspect the completed sale or start a new one.
+
+Completion deducts available stock, records original unit costs, updates registered
+customer statistics/history and creates an audit record. It does not recalculate
+average costs. Walk-in sales store customer_id as NULL. Insufficient-stock responses
+show the remaining quantity and preserve the cart for review. A repeated submission
+of the same cart returns its original sale without another stock deduction.
+
+Use **Sales history** to search by number/customer and filter by payment/date.
+Salespeople see their own sales; administrators can see all sales. Cost and profit
+details require the existing cost-view permission.
+
+Completed-sale cancellation remains disabled because refund and physical stock
+return rules are not yet approved. Do not edit/delete completed records in the
+database. Payment methods are staff records, not provider-verified payments.
+Returns, refunds and exchanges remain in later phases.
+
+## Orders and reservations (Phase 11)
+
+Run the migrations and rebuild assets after pulling this phase. Open **Orders**.
+
+1. Choose **New order**, add variants and select a registered customer. Enter an
+   optional delivery address and notes, then save.
+2. Review the saved total and quantities. **Confirm and reserve stock** holds
+   available stock without reducing physical quantity.
+3. After collecting the full amount outside the system, choose **Record full
+   payment**, select a method and optionally enter its reference.
+4. **Convert to sale** deducts physical and reserved stock together and records
+   historical costs, customer spending and one linked sale.
+5. Advance through **Preparing**, **Out for delivery**, then **Delivered**.
+
+Unpaid new/confirmed orders can be cancelled with a reason. Their reservations
+are released without increasing physical stock. Paid-order cancellation is
+blocked pending refund rules. There is no automatic reservation expiry or
+provider verification. Salespeople see their own orders; administrators with
+`orders.manage` can manage all orders. Sale attribution stays with the original
+order salesperson; the audit records identify the staff member performing each action.
