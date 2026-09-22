@@ -1031,14 +1031,24 @@ TZS 25,000
 
 Authorized user
 
-Recommended final policy:
+Owner-approved refund policy:
 
 ```text
 Salesperson may initiate
 Administrator approves
+Administrator completes
 ```
 
-or owner-only for initial deployment.
+The administrator selects the method at approval; it may differ from the
+original payment. Completion requires acknowledgement that the money has already
+been returned using that method. Recording completion is not a provider payout.
+Only administrators can reject/cancel pending or approved refund requests.
+
+Approved amounts hold the remaining refundable balance until completion or
+closure. Pending requests do not hold amounts. Creation, approval and completion
+recheck available amounts under an original-sale lock, including other approved
+holds, to prevent overlapping approvals. Refunds do not move inventory or repeat
+return COGS adjustments. The merchandise-return deadline is not a refund deadline.
 
 ## Flow
 

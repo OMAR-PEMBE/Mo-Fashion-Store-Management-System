@@ -335,7 +335,7 @@ details require the existing cost-view permission.
 Completed-sale cancellation remains disabled because refund and physical stock
 return rules are not yet approved. Do not edit/delete completed records in the
 database. Payment methods are staff records, not provider-verified payments.
-Refunds and exchanges remain in later phases. Returns are described below.
+Exchanges remain in a later phase. Returns and refunds are described below.
 
 ## Orders and reservations (Phase 11)
 
@@ -384,4 +384,33 @@ them for new sales. Return history is linked from the sale detail screen.
 
 Returns retain original cost snapshots and completed historical COGS adjustments.
 They do not recalculate current WAC, rewrite original sales, reduce customer
-spending totals or issue refunds. Refunds will be handled separately in Phase 13.
+spending totals or issue refunds. Refunds are handled separately in Phase 13 below.
+
+## Refunds (Phase 13)
+
+Run migrations and rebuild assets after pulling this phase. Open **Refunds →
+Request refund**, or choose **Request refund** on a sale/completed return.
+
+1. Find the original sale. Optionally select a related completed return and
+   choose **Find sale / update limits** to apply its eligibility cap.
+2. Enter refund amounts per sale line, leaving other lines at zero. Available
+   amounts account for discounts, completed refunds and approved amounts awaiting
+   payment. Enter the reason and submit the request.
+3. An administrator reviews it, chooses a refund method and confirms approval.
+   The method may differ from the original payment. Approval holds the amount
+   against the remaining refundable balance.
+4. The administrator returns money outside the system using that method, then
+   chooses **Record payment completion**, optionally enters a reference and
+   acknowledges payment. The app records payment; it does not send money.
+5. If no payment has been made, an administrator can reject/cancel the request
+   with a reason. This releases any approved hold. Completed refunds cannot be
+   cancelled or paid twice through the workflow.
+
+Salespeople can request/read refunds for their own sales; administrators with
+sales.view_all can handle all sales. Both roles can inspect linked refund history.
+Refunds never restore stock: process physical merchandise through Returns. A
+linked return refund is capped by its proportional discounted sale value, rounded
+down to two decimals, and all refunds also share the original sale-line cap.
+The three-day merchandise-return deadline does not restrict later money recording.
+Original sale/customer gross purchase statistics stay intact; completed refunds
+are separate financial records for calculating net revenue in later reports.

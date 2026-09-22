@@ -10,6 +10,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferenceDataController;
+use App\Http\Controllers\RefundController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
@@ -31,6 +32,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::middleware('can:refunds.create')->group(function () {
+        Route::resource('refunds', RefundController::class)->only(['index', 'create', 'store', 'show']);
+        foreach (['approve', 'complete', 'close'] as $action) {
+            Route::post('/refunds/{refund}/'.$action, [RefundController::class, $action])->name('refunds.'.$action);
+        }
+    });
     Route::middleware('can:returns.create')->group(function () {
         Route::resource('returns', ReturnController::class)->only(['index', 'create', 'store', 'show']);
         foreach (['approve', 'complete', 'reject'] as $action) {

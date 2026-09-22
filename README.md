@@ -47,7 +47,12 @@ the sidebar. See the [Phase 11 report](docs/PHASE_11.md).
 Returns now support a three-day limit, receipt or sale-record proof, approval by
 administrators and salespeople, partial returns, sellable-stock restoration and
 historical cost adjustments. Open **Returns** or **Start return** on a sale.
-Money refunds remain a later phase. See the [Phase 12 report](docs/PHASE_12.md).
+See the [Phase 12 report](docs/PHASE_12.md).
+
+Money refunds now support salesperson requests, administrator approval and manual
+completion, flexible refund methods, partial amounts and duplicate protection.
+Open **Refunds**, or request one from the original sale/completed return. See the
+[Phase 13 report](docs/PHASE_13.md).
 
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
 is not yet supplied; the UI uses the approved [UI.md](<Markdown Files/UI.md>) design tokens.

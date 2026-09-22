@@ -1410,7 +1410,25 @@ The original sale must remain unchanged.
 
 Used if owner approval is enabled.
 
-Exact authorization remains `TBD`.
+Owner-approved authorization: administrators approve and complete; salespeople
+may request within their existing sale access. Approval requires refunds.approve
+and administrator role. Completion requires refunds.complete and administrator
+role. Administrators choose any supported refund method at approval, regardless
+of the original payment method.
+
+Phase 13 exposes internal authenticated CSRF-protected `/refunds` web routes,
+not a deployed public integration API. Creation requires request_key, sale_id,
+reason and items containing sale_item_id/amount; return_id is optional. Zero amount
+form rows are omitted and at least one positive monetary allocation is required.
+The current monetary workflow does not use item quantity. Client-submitted totals,
+statuses, actor IDs and refund methods are ignored at creation.
+
+Approval accepts refund_method and holds the approved amount against available
+capacity. Completion accepts payment_returned acknowledgement and an optional
+payment_reference; it retains the approved method. Existing approved/completed
+refunds are included in eligibility checks under a sale lock. Duplicate state
+transitions fail without repeating effects; identical creation retries return the
+original request. Refunds never restore stock. No automatic provider payout occurs.
 
 ---
 

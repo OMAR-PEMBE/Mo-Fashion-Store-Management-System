@@ -4,12 +4,14 @@ use App\Enums\InventoryMovementType;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Purchase;
+use App\Models\Refund;
 use App\Models\SaleReturn;
 use App\Models\User;
 use App\Services\InventoryService;
 use App\Services\OpeningStockService;
 use App\Services\OrderService;
 use App\Services\PurchaseService;
+use App\Services\RefundService;
 use App\Services\ReturnService;
 use App\Services\SaleService;
 use App\Support\InventoryContext;
@@ -49,6 +51,13 @@ try {
     $context = new InventoryContext($actor, $key, 'concurrency_test', 1);
     $service = app(InventoryService::class);
     file_put_contents($resolved.'/'.$worker.'.attempting', 'attempting');
+    if (in_array($mode, ['refundapprove', 'refundcomplete'])) {
+        $service = app(RefundService::class);
+        $refund = Refund::findOrFail((int) $quantity);
+        $result = $mode === 'refundapprove' ? $service->approve($refund, ['refund_method' => 'CASH'], $actor) : $service->complete($refund, ['payment_returned' => 1], $actor);
+        echo json_encode(['status' => 'success', 'movement_id' => $result->id]);
+        exit(0);
+    }
     if ($mode === 'returncomplete') {
         $return = app(ReturnService::class)->complete(SaleReturn::findOrFail((int) $quantity), $actor);
         echo json_encode(['status' => 'success', 'movement_id' => $return->id]);

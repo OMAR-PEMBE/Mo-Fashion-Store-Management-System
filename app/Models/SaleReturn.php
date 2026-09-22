@@ -36,6 +36,11 @@ class SaleReturn extends Model
         return $this->hasMany(ReturnItem::class, 'return_id');
     }
 
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class, 'return_id');
+    }
+
     public function processor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'processed_by');

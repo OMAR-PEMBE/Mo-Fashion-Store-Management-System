@@ -14,4 +14,8 @@
     </div>
     @if(!$eligible && in_array($return->status, [\App\Enums\ReturnStatus::Pending, \App\Enums\ReturnStatus::Approved]))<p role="alert" class="mb-6 text-sm text-danger">The three-day return window has expired. This return can no longer be approved or completed.</p>@endif
     <x-card title="Processing history"><ul class="space-y-3 text-sm"><li>Created: {{ $return->return_date->format('d M Y H:i:s') }}</li>@if($return->approved_at)<li>Approved: {{ $return->approved_at->format('d M Y H:i:s') }}</li>@endif @if($return->completed_at)<li>Completed: {{ $return->completed_at->format('d M Y H:i:s') }}</li>@endif @if($return->rejected_at)<li>Rejected: {{ $return->rejected_at->format('d M Y H:i:s') }} — {{ $return->rejection_reason }}</li>@endif</ul></x-card>
+    @can('refunds.create')
+    @if($return->status === \App\Enums\ReturnStatus::Completed)<div class="mt-6"><x-action-link :href="route('refunds.create', ['sale_number' => $return->sale->sale_number, 'return_id' => $return->id])">Request refund</x-action-link></div>@endif
+    <x-card title="Refund history" class="mt-6"><ul class="space-y-3 text-sm">@forelse($return->refunds as $refund)<li><a class="underline" href="{{ route('refunds.show', $refund) }}">{{ $refund->refund_number }}</a> · {{ $refund->status->value }} · TZS {{ $refund->amount }}</li>@empty<li>No linked refunds recorded.</li>@endforelse</ul></x-card>
+    @endcan
 </x-layouts.app>

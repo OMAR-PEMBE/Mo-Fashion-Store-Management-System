@@ -11,10 +11,10 @@ class Permissions
         'products.view', 'products.create', 'products.update', 'products.view_cost',
         'inventory.view', 'inventory.adjust',
         'customers.create', 'customers.manage', 'sales.create', 'sales.view_all', 'sales.cancel', 'orders.create', 'orders.manage',
-        'returns.create', 'returns.approve', 'refunds.create', 'refunds.approve', 'reports.view', 'users.manage',
+        'returns.create', 'returns.approve', 'refunds.create', 'refunds.approve', 'refunds.complete', 'reports.view', 'users.manage',
     ];
 
     public const SALESPERSON = [
-        'products.view', 'inventory.view', 'customers.create', 'sales.create', 'orders.create', 'returns.create', 'returns.approve',
+        'products.view', 'inventory.view', 'customers.create', 'sales.create', 'orders.create', 'returns.create', 'returns.approve', 'refunds.create',
     ];
 }

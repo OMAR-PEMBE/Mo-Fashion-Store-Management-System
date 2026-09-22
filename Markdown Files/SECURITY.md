@@ -436,13 +436,13 @@ Administrator approves
 Authorized user completes refund
 ```
 
-For Version 1, owner-only refunds are also acceptable and simpler.
-
-The exact business policy remains:
-
-```text
-TBD
-```
+Owner-approved Phase 13 policy: salespeople may request refunds; administrators
+approve and complete them. Both the relevant permission and administrator role
+are checked for approval, completion and closure. Existing sale ownership applies
+to reading/requesting refunds. The administrator may select a method different
+from the original payment. Completion records manual payment acknowledgement;
+it is not external provider verification. Approved amounts hold refund capacity
+to prevent competing requests from authorizing more than was charged.
 
 ---
 

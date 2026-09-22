@@ -1397,8 +1397,9 @@ The following are still unresolved.
 
 ## Refunds
 
-- Who can authorize refunds: `TBD`
-- Whether refund method must match original payment method: `TBD`
+- Approved: salespeople may request; administrators approve and complete refunds.
+- Approved: administrators may choose a different refund method from the original
+  payment. The approved method is retained when recording manual completion.
 
 ## Exchanges
 

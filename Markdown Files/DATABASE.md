@@ -1386,6 +1386,24 @@ Represents money returned to customers.
 
 # 56. Refund Status
 
+Phase 13 implementation adds request_key/request_hash for retry protection,
+requested_by, approved_at, payment_reference, closed_by/closed_at and
+closure_reason. refund_method is NULL until an administrator chooses it at
+approval; processed_by/processed_at are NULL until payment completion. Completed
+refunds are immutable and retain original sales unchanged. Approved amounts hold
+refund capacity; only completed amounts reduce net revenue in future reporting.
+
+refund_items stores monetary allocations against discounted original sale lines;
+quantity is nullable and unused by the current monetary-refund form. A unique
+refund/sale-item pair prevents duplicate lines. Optional return linkage must
+reference a completed return from that sale; each linked line is additionally
+capped at its returned quantity's proportional discounted value, rounded down to
+two decimal places. Global per-sale-item caps still include all approved/completed
+refunds regardless of linkage. Completed linked amounts increment the matching
+return_item.refund_amount atomically. Stock and historical return costs are not
+changed. Original customer purchase/spending caches continue to describe original
+sales; net revenue must derive from completed sales less completed refunds.
+
 ```text
 PENDING
 APPROVED

@@ -51,7 +51,7 @@ class ReturnController extends Controller
     public function show(Request $request, SaleReturn $return, ReturnService $service)
     {
         $service->authorize($request->user(), $return->sale);
-        $return->load(['items.variant.product', 'processor']);
+        $return->load(['items.variant.product', 'processor', 'refunds']);
         $deadline = $service->deadline($return->sale);
         $eligible = $deadline && now()->lte($deadline);
 

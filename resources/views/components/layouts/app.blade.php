@@ -58,6 +58,9 @@
             @can('returns.create')
                 <a href="{{ route('returns.index') }}" @if(request()->routeIs('returns.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('returns.*'), 'hover:bg-white/10' => !request()->routeIs('returns.*')])>Returns</a>
             @endcan
+            @can('refunds.create')
+                <a href="{{ route('refunds.index') }}" @if(request()->routeIs('refunds.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('refunds.*'), 'hover:bg-white/10' => !request()->routeIs('refunds.*')])>Refunds</a>
+            @endcan
             </nav>
             <div class="hidden px-9 py-8 text-xs leading-6 text-white/60 lg:block">Mo Fashion Store<br>Business Management System</div>
         </aside>

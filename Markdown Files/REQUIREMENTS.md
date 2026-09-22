@@ -533,8 +533,11 @@ The following still require confirmation.
 
 ### Refunds
 
-- Can salespeople issue refunds, or only the owner?
-- Can refunds be cash/mobile money regardless of the original payment method?
+- Approved: salespeople may request refunds; administrators approve and complete
+  them. Existing sale access restrictions remain in force.
+- Approved: the administrator chooses the refund method, which may differ from
+  the original payment. The choice is recorded at approval. Completion records
+  money already returned outside the system.
 
 ### Exchanges
 
