@@ -5,6 +5,7 @@ namespace App\Support;
 class Permissions
 {
     public const ALL = [
+        'reference-data.manage',
         'products.view', 'products.create', 'products.update',
         'inventory.view', 'inventory.adjust',
         'customers.create', 'sales.create', 'sales.view_all', 'orders.create',

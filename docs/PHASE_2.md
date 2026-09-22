@@ -52,6 +52,13 @@ administrator provisioning, CSRF and password validation. The dedicated MySQL
 suite validates migrations and actual role/login queries on `mfbms_testing`,
 rolling back generated staff data.
 
+Results: 22 feature/foundation tests passed (151 assertions); MySQL integration
+passed (1 test, 16 assertions). Pint, the production Vite build, Blade compilation
+and route caching passed. Chrome checks passed at 1440px and 390px with locally
+loaded Manrope, no horizontal overflow and no JavaScript exceptions. The mobile
+login screenshot was visually reviewed. Development migrations and role seeding
+also completed successfully.
+
 ## Remaining setup
 
 Create your administrator interactively using `app:create-administrator`.

@@ -124,3 +124,31 @@ Configure a real mail transport before using password recovery in production,
 and set `APP_URL` to the correct application URL. Reset links expire after
 60 minutes and can be used once. Password changes invalidate other sessions
 on their next protected request. Production requires HTTPS and secure cookies.
+
+## Catalogue setup (Phase 3)
+
+For a fresh checkout or upgrade:
+
+```powershell
+& '.tools/php/php.exe' artisan migrate
+& '.tools/php/php.exe' artisan db:seed
+```
+
+Sign in as an administrator and use **Catalogue setup → Categories / Sizes /
+Colours** in the sidebar (open **Menu** on mobile). Each list supports search,
+status filtering and pagination. Use **Add** to create an entry and **Edit** to
+change its details or set its status to Inactive. Entries can be reactivated.
+No permanent delete action is exposed.
+
+Category slugs are unique lowercase words separated by hyphens. Size and colour
+codes are unique uppercase identifiers with optional hyphens or underscores.
+Size display order is configurable; lower values appear first. Optional colour
+hex values use six digits, for example `#123ABC`.
+
+Initial sizes are XS, S, M, L, XL and XXL. Product categories and colours start
+empty so you can add your store's actual choices. Expense categories and basic
+system settings are prepared for later phases; they have no editing screens yet.
+Rerunning seeders preserves existing values and permission revocations.
+
+Keep database passwords only in `.env` and `.env.testing`. Their `.example`
+templates are tracked by Git and must contain no credentials.

@@ -23,7 +23,14 @@
             </div>
             <nav id="main-navigation" aria-label="Main navigation" class="px-5 pb-6 lg:block" :class="navigationOpen ? 'block' : 'hidden lg:block'">
                 <p class="px-4 pb-3 text-xs font-medium uppercase tracking-[0.18em] text-white/60">Workspace</p>
-                <a href="{{ route('home') }}" aria-current="page" class="flex items-center gap-3 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-text-primary"><span aria-hidden="true">⌂</span> Overview</a>
+                <a href="{{ route('home') }}" @if(request()->routeIs('dashboard')) aria-current="page" @endif @class(['flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('dashboard'), 'hover:bg-white/10' => !request()->routeIs('dashboard')])><span aria-hidden="true">⌂</span> Overview</a>
+                @can('reference-data.manage')
+                    <p class="px-4 pb-2 pt-6 text-xs font-medium uppercase tracking-[0.18em] text-white/60">Catalogue setup</p>
+                    @foreach(\App\Enums\ReferenceType::cases() as $referenceType)
+                        @php($selected = request()->route('type') === $referenceType)
+                        <a href="{{ route('reference.index', $referenceType->value) }}" @if($selected) aria-current="page" @endif @class(['mt-1 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => $selected, 'hover:bg-white/10' => !$selected])>{{ $referenceType->label() }}</a>
+                    @endforeach
+                @endcan
             </nav>
             <div class="hidden px-9 py-8 text-xs leading-6 text-white/60 lg:block">Mo Fashion Store<br>Business Management System</div>
         </aside>

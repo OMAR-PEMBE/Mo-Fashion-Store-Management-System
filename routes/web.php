@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\ReferenceDataController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,13 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::prefix('reference-data/{type}')->name('reference.')->middleware('can:reference-data.manage')->group(function () {
+        Route::get('/', [ReferenceDataController::class, 'index'])->name('index');
+        Route::get('/create', [ReferenceDataController::class, 'create'])->name('create');
+        Route::post('/', [ReferenceDataController::class, 'store'])->name('store');
+        Route::get('/{record}/edit', [ReferenceDataController::class, 'edit'])->whereNumber('record')->name('edit');
+        Route::put('/{record}', [ReferenceDataController::class, 'update'])->whereNumber('record')->name('update');
+    });
     Route::view('/dashboard', 'home')->name('dashboard');
     Route::get('/profile', function (Request $request) {
         Gate::authorize('view', $request->user());
