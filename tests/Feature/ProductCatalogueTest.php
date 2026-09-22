@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Services\ProductCatalogueService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -71,7 +70,8 @@ class ProductCatalogueTest extends TestCase
         $variant = ProductVariant::firstOrFail();
         $this->assertSame($product->id, $variant->product_id);
         $this->assertSame('0.00', $variant->weighted_average_cost);
-        $this->assertFalse(Schema::hasTable('inventory'));
+        $this->assertDatabaseHas('inventories', ['product_variant_id' => $variant->id, 'physical_quantity' => 0, 'reserved_quantity' => 0]);
+        $this->assertDatabaseCount('inventory_movements', 0);
         $this->get('/products/'.$product->id)->assertOk()->assertSee('JEANS-BLUE-M')->assertSee('Average cost');
     }
 

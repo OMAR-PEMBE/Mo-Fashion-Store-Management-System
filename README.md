@@ -1,6 +1,6 @@
 # Mo Fashion Store BMS
 
-Foundation, staff authentication and product catalogue for the single-branch retail management system.
+Foundation, staff authentication, catalogue, suppliers and inventory for the single-branch retail management system.
 
 Stack: PHP 8.4+, Laravel 13, Livewire 4 (bundled Alpine), Tailwind CSS 4,
 Vite and MySQL 8+. Typography: locally bundled Manrope 400/500/600/700.
@@ -22,6 +22,12 @@ read-only access to available items and cannot see costs. See the
 Administrators can also create, search, edit, deactivate and reactivate suppliers;
 see the [Phase 5 report](docs/PHASE_5.md). Purchase history connects in the purchasing phase.
 Business modules follow in [IMPLEMENTATION_PLAN.md](<Markdown Files/IMPLEMENTATION_PLAN.md>).
+
+Inventory now provides physical/reserved/available balances, low-stock filtering
+and administrator movement history. Transactional stock services enforce quantity
+limits, reservation ownership and idempotent retries using MySQL row locks.
+See the [Phase 6 report](docs/PHASE_6.md). Stock-entry and purchasing screens follow
+in later phases; new variants start with zero stock.
 
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
 is not yet supplied; the UI uses the approved [UI.md](<Markdown Files/UI.md>) design tokens.

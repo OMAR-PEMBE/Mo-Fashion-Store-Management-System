@@ -37,6 +37,9 @@
                 @can('suppliers.manage')
                     <a href="{{ route('suppliers.index') }}" @if(request()->routeIs('suppliers.*')) aria-current="page" @endif @class(['mt-1 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('suppliers.*'), 'hover:bg-white/10' => !request()->routeIs('suppliers.*')])>Suppliers</a>
                 @endcan
+                @can('inventory.view')
+                    <a href="{{ route('inventory.index') }}" @if(request()->routeIs('inventory.*')) aria-current="page" @endif @class(['mt-1 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('inventory.*'), 'hover:bg-white/10' => !request()->routeIs('inventory.*')])>Inventory</a>
+                @endcan
             </nav>
             <div class="hidden px-9 py-8 text-xs leading-6 text-white/60 lg:block">Mo Fashion Store<br>Business Management System</div>
         </aside>

@@ -204,3 +204,25 @@ Salespeople cannot access supplier records.
 
 The purchase-history panel is a placeholder until stock purchasing is implemented
 in Phase 7. No purchase records, balances or supplier credit rules are introduced.
+
+## Inventory foundation (Phase 6)
+
+Run `& '.tools/php/php.exe' artisan migrate` after pulling this phase, then refresh
+the application and open **Inventory**. Existing and new variants receive a zero
+balance; catalogue creation does not record incoming stock.
+
+The list shows physical, reserved and available quantities. Search by product name
+or SKU, or select **Low stock only**. Available quantity equals physical minus
+reserved. Administrators can open **Movements** to inspect the actor, reference and
+before/after balances. Salespeople see available catalogue items and stock levels.
+On small screens, swipe tables horizontally to see all columns.
+
+These screens are read-only. Stock receiving and weighted-average costing arrive
+with purchasing; do not enter stock by editing database quantities directly.
+Size/colour can no longer be changed after a variant has inventory history.
+
+Run the standard application suite with `& '.tools/php/php.exe' artisan test`.
+Run real MySQL locking tests with
+`& '.tools/php/php.exe' vendor/bin/phpunit --configuration phpunit.mysql.xml`.
+These require the dedicated `mfbms_testing` database configured in `.env.testing`.
+The concurrency tests use separate PHP processes and clean up their own records.

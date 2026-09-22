@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\ReferenceDataController;
@@ -24,6 +25,8 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    Route::get('/inventory/{variant}/movements', [InventoryController::class, 'movements'])->withTrashed()->name('inventory.movements');
     Route::resource('suppliers', SupplierController::class)->except('destroy');
     Route::post('/products/{product}/restore', [ProductController::class, 'restore'])->withTrashed()->name('products.restore');
     Route::resource('products', ProductController::class)->withTrashed(['show']);

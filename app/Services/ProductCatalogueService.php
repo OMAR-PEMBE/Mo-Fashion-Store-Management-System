@@ -78,6 +78,9 @@ class ProductCatalogueService
                         }
                     }
                 }
+                if ($variant->exists && ($variant->size_id != $data['size_id'] || $variant->colour_id != $data['colour_id']) && $variant->movements()->lockForUpdate()->first(['id'])) {
+                    throw ValidationException::withMessages(['size_id' => 'Size and colour cannot change after inventory activity. Create a separate variant.']);
+                }
                 $duplicate = $product->variants()->withTrashed()->where('size_id', $data['size_id'])->where('colour_id', $data['colour_id'])
                     ->when($variant->exists, fn ($query) => $query->where('id', '!=', $variant->id))->exists();
                 if ($duplicate) {
@@ -86,6 +89,7 @@ class ProductCatalogueService
                 $variant->fill($data);
                 $variant->product()->associate($product);
                 $variant->save();
+                app(InventoryService::class)->initialize($variant);
 
                 return $variant;
             });
