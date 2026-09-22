@@ -10,6 +10,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferenceDataController;
+use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
@@ -30,6 +31,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::middleware('can:returns.create')->group(function () {
+        Route::resource('returns', ReturnController::class)->only(['index', 'create', 'store', 'show']);
+        foreach (['approve', 'complete', 'reject'] as $action) {
+            Route::post('/returns/{return}/'.$action, [ReturnController::class, $action])->name('returns.'.$action);
+        }
+    });
     Route::middleware('can:orders.create')->group(function () {
         Route::get('/orders/lookup', [SaleController::class, 'lookup'])->name('orders.lookup');
         Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);

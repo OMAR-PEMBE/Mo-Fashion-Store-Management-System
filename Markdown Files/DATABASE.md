@@ -1283,6 +1283,16 @@ Represents return events.
 
 # 51. Return Status
 
+Phase 12 implementation adds request_key/request_hash for creation retries;
+proof_type/proof_reference; approved/completed/rejected actor IDs and timestamps;
+rejection_reason; and total_cost_adjustment. return_items includes immutable
+unit_cost and cost_adjustment snapshots from original sale items, with one row
+per return/sale-item pair. Completed adjustments are historical COGS reversals;
+pending/rejected amounts are not financial effects. refund_amount stays zero
+until a separate refund module is implemented. Original sale and customer
+spending totals remain unchanged by a merchandise-only return. RETURN numbering
+uses document_sequences. No return expiry, refund or WAC recalculation is implicit.
+
 ```text
 PENDING
 APPROVED

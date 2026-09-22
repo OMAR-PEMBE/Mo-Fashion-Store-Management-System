@@ -1388,8 +1388,12 @@ The following are still unresolved.
 
 ## Returns
 
-- Return period: `TBD`
-- Whether proof of purchase is mandatory: `TBD`
+- Approved return period: maximum three days (72 elapsed hours from completed
+  sale, inclusive). Creation, approval and completion enforce this deadline.
+- Approved proof: customer receipt or original sale record. Original sale/item
+  linkage is required in either case.
+- Administrators and salespeople may approve returns within their existing sale
+  access scope. Refund authorization remains a separate, unresolved policy.
 
 ## Refunds
 

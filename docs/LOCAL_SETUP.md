@@ -335,7 +335,7 @@ details require the existing cost-view permission.
 Completed-sale cancellation remains disabled because refund and physical stock
 return rules are not yet approved. Do not edit/delete completed records in the
 database. Payment methods are staff records, not provider-verified payments.
-Returns, refunds and exchanges remain in later phases.
+Refunds and exchanges remain in later phases. Returns are described below.
 
 ## Orders and reservations (Phase 11)
 
@@ -357,3 +357,31 @@ blocked pending refund rules. There is no automatic reservation expiry or
 provider verification. Salespeople see their own orders; administrators with
 `orders.manage` can manage all orders. Sale attribution stays with the original
 order salesperson; the audit records identify the staff member performing each action.
+
+## Returns (Phase 12)
+
+Run migrations and rebuild assets after pulling this phase. Open **Returns → New
+return**, or open the original sale and choose **Start return**.
+
+1. Find the original sale by its sale number. The deadline is three days (72
+   hours) after sale completion; the screen displays the exact deadline.
+2. Enter quantities for items being returned; leave other quantities at zero.
+   Select each condition: SELLABLE, DAMAGED, DEFECTIVE or OTHER.
+3. Enter the reason. Choose the recorded sale as proof, or choose receipt and
+   enter its reference. Both options still require the matching recorded sale.
+4. **Save for review** creates a pending return. Check the details and choose
+   **Approve return**. Administrators and salespeople can approve within their
+   existing sale access scope.
+5. After receiving and inspecting the items, **Complete return** restores only
+   sellable quantities to stock. **Reject return** instead records a rejection
+   reason and changes no stock.
+
+Creation, approval and completion all enforce the deadline. Quantities are
+rechecked so repeat/competing requests cannot exceed what was sold. Rejected
+returns do not consume returnable quantities. Pending returns do not hold stock.
+Archived variants can be returned against the original sale without reactivating
+them for new sales. Return history is linked from the sale detail screen.
+
+Returns retain original cost snapshots and completed historical COGS adjustments.
+They do not recalculate current WAC, rewrite original sales, reduce customer
+spending totals or issue refunds. Refunds will be handled separately in Phase 13.

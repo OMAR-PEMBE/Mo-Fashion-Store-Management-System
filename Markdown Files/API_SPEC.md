@@ -1305,6 +1305,27 @@ Request:
 
 # 60. Return Processing Rules
 
+Phase 12 policy: a return must be processed within three days (72 hours) of sale
+completion, inclusive. Receipt or recorded sale is sufficient proof, but every
+return must reference the recorded original sale/items. Both initial roles may
+approve within existing sale access scope. `returns.create` protects initiation
+and reading; `returns.approve` protects approval, rejection and completion.
+
+The current Blade application uses authenticated CSRF-protected `/returns`
+routes, not a deployed public `/api/v1` integration. Its create input additionally
+requires request_key, reason and proof_type (SALE_RECORD or RECEIPT); RECEIPT
+requires proof_reference. For SALE_RECORD, the server stores the actual sale
+number. Zero-quantity form rows are ignored; at least one positive line is required.
+Costs, totals, actor IDs and stock-restored flags are server-owned.
+
+Creation persists PENDING without stock effects. Approval persists APPROVED;
+completion atomically restores only sellable stock and records the historical
+cost adjustment. State changes recheck eligibility and remaining quantities.
+Identical creation retries return the original record; conflicting keys and
+repeated transitions fail safely. Rejection records a reason without stock effects.
+Refund processing remains separate. The following stock-processing steps apply
+to completion, rather than to draft creation.
+
 The server shall:
 
 1. Validate original sale.

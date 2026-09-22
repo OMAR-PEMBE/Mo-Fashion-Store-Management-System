@@ -523,8 +523,13 @@ The following still require confirmation.
 
 ### Returns
 
-- How many days after purchase can a customer return an item?
-- Are returns allowed without proof of purchase?
+- Approved: returns are allowed for a maximum of three days after purchase.
+  Implementation uses 72 elapsed hours from sale completion, inclusive, and
+  rechecks the deadline at creation, approval and completion.
+- Approved: a receipt or the original sale recorded in the system is sufficient
+  proof. Every return must match its original recorded sale and sale items.
+- Approved: administrators and salespeople may both approve returns. Existing
+  sale visibility still applies; salespeople handle their own sales.
 
 ### Refunds
 

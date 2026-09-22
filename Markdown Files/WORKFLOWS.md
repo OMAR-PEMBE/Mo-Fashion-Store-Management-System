@@ -924,6 +924,18 @@ Returns
 
 # 39. Return Validation
 
+Owner-approved policy: process returns within three days (72 hours) of original
+sale completion, inclusive. Validate this at creation, approval and completion.
+A customer receipt or matching recorded sale is accepted as proof; retain the
+proof type/reference and original sale/item linkage. Both administrators and
+salespeople may approve. Existing sale access and cost visibility still apply.
+
+The internal workflow is PENDING → APPROVED → COMPLETED. Pending or approved
+returns can be rejected with a reason, including after the return window expires.
+Only completed returns consume returnable quantity. Recheck quantities under an
+original-sale lock at approval and completion; pending requests are not stock
+reservations. No refund or sale-revenue rewrite occurs in this workflow.
+
 The system shall check:
 
 ```text

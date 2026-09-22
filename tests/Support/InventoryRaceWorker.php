@@ -4,11 +4,13 @@ use App\Enums\InventoryMovementType;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Purchase;
+use App\Models\SaleReturn;
 use App\Models\User;
 use App\Services\InventoryService;
 use App\Services\OpeningStockService;
 use App\Services\OrderService;
 use App\Services\PurchaseService;
+use App\Services\ReturnService;
 use App\Services\SaleService;
 use App\Support\InventoryContext;
 use Illuminate\Contracts\Console\Kernel;
@@ -47,6 +49,11 @@ try {
     $context = new InventoryContext($actor, $key, 'concurrency_test', 1);
     $service = app(InventoryService::class);
     file_put_contents($resolved.'/'.$worker.'.attempting', 'attempting');
+    if ($mode === 'returncomplete') {
+        $return = app(ReturnService::class)->complete(SaleReturn::findOrFail((int) $quantity), $actor);
+        echo json_encode(['status' => 'success', 'movement_id' => $return->id]);
+        exit(0);
+    }
     if (in_array($mode, ['orderconfirm', 'orderconvert', 'ordercancel'])) {
         $orders = app(OrderService::class);
         $order = Order::findOrFail((int) $quantity);

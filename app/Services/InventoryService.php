@@ -78,7 +78,9 @@ class InventoryService
         }
         $permission = match ($mode) {
             'reserve', 'release', 'complete' => 'orders.create',
-            default => $type === Type::Sale ? 'sales.create' : 'inventory.adjust',
+            default => match ($type) {
+                Type::Sale => 'sales.create', Type::Return => 'returns.approve', default => 'inventory.adjust'
+            },
         };
         $actor = $context->actor->fresh();
         if (! $actor) {

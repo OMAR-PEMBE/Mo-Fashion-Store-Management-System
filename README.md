@@ -44,6 +44,11 @@ Orders now support registered customers, stock reservations, manual payment,
 sale conversion, unpaid cancellation and delivery tracking. Open **Orders** in
 the sidebar. See the [Phase 11 report](docs/PHASE_11.md).
 
+Returns now support a three-day limit, receipt or sale-record proof, approval by
+administrators and salespeople, partial returns, sellable-stock restoration and
+historical cost adjustments. Open **Returns** or **Start return** on a sale.
+Money refunds remain a later phase. See the [Phase 12 report](docs/PHASE_12.md).
+
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
 is not yet supplied; the UI uses the approved [UI.md](<Markdown Files/UI.md>) design tokens.
 
