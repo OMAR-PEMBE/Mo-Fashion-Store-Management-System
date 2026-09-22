@@ -185,3 +185,22 @@ inactive reference can be retained while deactivating the existing item.
 Product image uploads are optional in the specifications and are not included
 in this phase. Stock receiving, opening balances, sales and costing calculations
 remain in their scheduled phases.
+
+## Suppliers (Phase 5)
+
+After pulling this phase, run `& '.tools/php/php.exe' artisan migrate`. The migration
+adds supplier storage and grants supplier management to existing administrators.
+New installations receive the permission through normal role seeding.
+
+Open **Suppliers → Add supplier**. A business name and unique supplier code are
+required. Contact person, phone, email, location and notes are optional. Supplier
+codes use letters/numbers separated by hyphens or underscores and save in uppercase.
+
+The list supports search by name, code, contact person, phone or email, plus status
+filters and pagination. Open **View → Edit supplier** to change details or select
+Inactive. Deactivation retains the same record and contact details; change the
+status back to Active to reactivate it. There is no permanent deletion action.
+Salespeople cannot access supplier records.
+
+The purchase-history panel is a placeholder until stock purchasing is implemented
+in Phase 7. No purchase records, balances or supplier credit rules are introduced.

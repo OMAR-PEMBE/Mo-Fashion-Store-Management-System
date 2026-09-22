@@ -19,6 +19,8 @@ customizations. Products include searchable listings, size/colour variants, uniq
 codes/SKUs, selling prices, status controls and archive/restore. Salespeople have
 read-only access to available items and cannot see costs. See the
 [Phase 4 report](docs/PHASE_4.md). Creating catalogue items does not add stock.
+Administrators can also create, search, edit, deactivate and reactivate suppliers;
+see the [Phase 5 report](docs/PHASE_5.md). Purchase history connects in the purchasing phase.
 Business modules follow in [IMPLEMENTATION_PLAN.md](<Markdown Files/IMPLEMENTATION_PLAN.md>).
 
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
