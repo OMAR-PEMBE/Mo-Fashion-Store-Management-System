@@ -1,0 +1,32 @@
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import 'tailwindcss';
+
+@source '../views';
+@source '../../app/Livewire';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@theme {
+    --font-sans: 'Manrope', sans-serif;
+    --color-primary: #C9A227;
+    --color-primary-hover: #B8962E;
+    --color-background: #FAF8F3;
+    --color-surface: #FFFFFF;
+    --color-text-primary: #18181B;
+    --color-text-secondary: #71717A;
+    --color-border: #E4E4E7;
+    --color-selected: #F3EBD3;
+    --color-info: #1F5F8B;
+    --color-warning: #E08A00;
+    --color-danger: #C62828;
+    --color-success: #2E7D32;
+}
+
+@layer base {
+    body { @apply bg-background font-sans text-text-primary antialiased; }
+    button, a, input, select, textarea { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-info; }
+    button:not(:disabled), summary { cursor: pointer; }
+    [x-cloak] { display: none !important; }
+}

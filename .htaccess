@@ -1,0 +1,3 @@
+# The project root is not a web document root. Configure Apache to use public/.
+# This also prevents exposure of project-local tools and environment files.
+Require all denied
