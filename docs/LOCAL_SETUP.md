@@ -152,3 +152,36 @@ Rerunning seeders preserves existing values and permission revocations.
 
 Keep database passwords only in `.env` and `.env.testing`. Their `.example`
 templates are tracked by Git and must contain no credentials.
+
+## Products and variants (Phase 4)
+
+Run `& '.tools/php/php.exe' artisan migrate` after pulling this phase. Existing
+administrators receive the new cost-viewing permission through the migration.
+
+1. Sign in as an administrator and open **Products → Add product**.
+2. Enter a name, unique product code and active category. A default selling price
+   and description are optional.
+3. Save, then select **Add variant** on the product detail page.
+4. Select size/colour, enter a unique SKU, selling price and low-stock threshold.
+   For accessories you may choose **No size / one size** and/or **No colour**.
+5. Save. Repeat for each combination. Creating a product or variant adds no stock.
+
+Codes and SKUs are stored in uppercase. Prices must be nonnegative with no more
+than two decimal places. The default product price only prefills new variant
+forms; changing it does not change existing variant prices. Average cost starts
+at zero and cannot be manually edited here.
+
+Use **Edit** to update or deactivate an item. **Archive** asks for confirmation
+and preserves records. Choose the **Archived** filter to find and restore items;
+restored records are inactive until reviewed. Codes, SKUs and combinations stay
+reserved for archived records, so restore an existing item instead of duplicating
+it. Product archival preserves its variants. No hard-delete action is exposed.
+
+Salespeople can browse available products, variants and selling prices. They
+cannot create/edit/archive entries or see average cost. Inactive categories,
+sizes and colours are not available for new selections. A previously linked
+inactive reference can be retained while deactivating the existing item.
+
+Product image uploads are optional in the specifications and are not included
+in this phase. Stock receiving, opening balances, sales and costing calculations
+remain in their scheduled phases.

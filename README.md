@@ -1,6 +1,6 @@
 # Mo Fashion Store BMS
 
-Foundation, staff authentication and catalogue reference data for the single-branch retail management system.
+Foundation, staff authentication and product catalogue for the single-branch retail management system.
 
 Stack: PHP 8.4+, Laravel 13, Livewire 4 (bundled Alpine), Tailwind CSS 4,
 Vite and MySQL 8+. Typography: locally bundled Manrope 400/500/600/700.
@@ -15,7 +15,10 @@ checks, login throttling, logout, password reset and password change. The protec
 workspace contains no financial metrics. Administrators can create, edit, search
 and deactivate categories, sizes and colours under **Catalogue setup**. Starter
 sizes, expense categories and system settings are seeded without overwriting
-customizations. See the [Phase 3 report](docs/PHASE_3.md).
+customizations. Products include searchable listings, size/colour variants, unique
+codes/SKUs, selling prices, status controls and archive/restore. Salespeople have
+read-only access to available items and cannot see costs. See the
+[Phase 4 report](docs/PHASE_4.md). Creating catalogue items does not add stock.
 Business modules follow in [IMPLEMENTATION_PLAN.md](<Markdown Files/IMPLEMENTATION_PLAN.md>).
 
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`

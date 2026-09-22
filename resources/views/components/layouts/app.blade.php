@@ -31,6 +31,9 @@
                         <a href="{{ route('reference.index', $referenceType->value) }}" @if($selected) aria-current="page" @endif @class(['mt-1 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => $selected, 'hover:bg-white/10' => !$selected])>{{ $referenceType->label() }}</a>
                     @endforeach
                 @endcan
+                @can('products.view')
+                    <a href="{{ route('products.index') }}" @if(request()->routeIs('products.*', 'variants.*')) aria-current="page" @endif @class(['mt-3 block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('products.*', 'variants.*'), 'hover:bg-white/10' => !request()->routeIs('products.*', 'variants.*')])>Products</a>
+                @endcan
             </nav>
             <div class="hidden px-9 py-8 text-xs leading-6 text-white/60 lg:block">Mo Fashion Store<br>Business Management System</div>
         </aside>
