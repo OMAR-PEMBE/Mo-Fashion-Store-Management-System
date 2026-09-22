@@ -1,0 +1,15 @@
+<x-layouts.app title="Purchases">
+    <div class="mb-7 flex flex-wrap items-center justify-between gap-4"><h1 class="text-3xl font-bold">Purchases</h1><x-action-link :href="route('purchases.create')">New purchase</x-action-link></div>
+    <form method="GET" class="mb-6 grid gap-4 rounded-xl border border-border bg-surface p-5 sm:grid-cols-2 lg:grid-cols-3">
+        <x-input name="q" label="Search" :value="$filters['q'] ?? ''" placeholder="Number, invoice or supplier" maxlength="191" />
+        <x-select name="status" label="Status"><option value="">All statuses</option>@foreach(\App\Enums\PurchaseStatus::cases() as $status)<option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ ucfirst(strtolower($status->value)) }}</option>@endforeach</x-select>
+        <x-select name="payment_status" label="Payment status"><option value="">All payment statuses</option>@foreach(['PAID', 'PARTIALLY_PAID', 'UNPAID'] as $status)<option value="{{ $status }}" @selected(($filters['payment_status'] ?? '') === $status)>{{ ucfirst(strtolower(str_replace('_', ' ', $status))) }}</option>@endforeach</x-select>
+        <x-input name="date_from" label="From date" type="date" :value="$filters['date_from'] ?? ''" /><x-input name="date_to" label="To date" type="date" :value="$filters['date_to'] ?? ''" />
+        @if(!empty($filters['supplier_id']))<input type="hidden" name="supplier_id" value="{{ $filters['supplier_id'] }}">@endif
+        <div class="flex items-end gap-4"><x-button type="submit" variant="secondary">Filter</x-button><a href="{{ route('purchases.index') }}" class="py-3 text-sm underline">Clear</a></div>
+    </form>
+    <div class="overflow-hidden rounded-xl border border-border bg-surface"><div class="relative overflow-x-auto"><table class="w-full min-w-[700px] text-left text-sm"><caption class="sr-only">Supplier purchases</caption><thead class="border-b border-border bg-background"><tr>@foreach(['Purchase / Date', 'Supplier', 'Status', 'Payment', 'Total (TZS)'] as $heading)<th scope="col" class="px-5 py-4 font-medium">{{ $heading }}</th>@endforeach</tr></thead><tbody class="divide-y divide-border">
+        @forelse($purchases as $purchase)<tr><th scope="row" class="max-w-xs break-all px-5 py-4 font-medium"><a href="{{ route('purchases.show', $purchase) }}" class="underline">{{ $purchase->purchase_number }}</a><span class="mt-2 block text-xs text-text-secondary">{{ $purchase->purchase_date->format('d M Y') }}</span></th><td class="px-5 py-4">{{ $purchase->supplier->name }}</td><td class="px-5 py-4"><x-badge :tone="$purchase->status === \App\Enums\PurchaseStatus::Confirmed ? 'success' : 'info'">{{ $purchase->status->value }}</x-badge></td><td class="px-5 py-4">{{ str_replace('_', ' ', $purchase->payment_status) }}</td><td class="px-5 py-4">{{ $purchase->total_amount }}</td></tr>
+        @empty<tr><td colspan="5" class="p-10 text-center text-text-secondary">No purchases found. Create a draft or change your filters.</td></tr>@endforelse
+    </tbody></table></div><div class="border-t border-border p-5">{{ $purchases->links() }}</div></div>
+</x-layouts.app>

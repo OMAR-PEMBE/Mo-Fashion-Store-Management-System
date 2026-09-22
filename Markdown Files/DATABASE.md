@@ -565,6 +565,13 @@ being created twice.
 
 # 22. purchases
 
+Phase 7 implementation note: an unsigned `revision` integer (default 1) protects
+draft review from concurrent edits. It increments on edit, confirmation and
+cancellation. Submitted stale revisions receive 409. Purchase numbers use the
+document_sequences table described in section 81. WAC calculations use exact
+decimal arithmetic and round half-up to the defined two-decimal storage scale.
+Purchasing currently accepts up to 100 distinct variant lines per document.
+
 Represents stock acquired from suppliers.
 
 ## Fields

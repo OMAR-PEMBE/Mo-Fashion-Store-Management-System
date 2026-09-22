@@ -226,3 +226,33 @@ Run real MySQL locking tests with
 `& '.tools/php/php.exe' vendor/bin/phpunit --configuration phpunit.mysql.xml`.
 These require the dedicated `mfbms_testing` database configured in `.env.testing`.
 The concurrency tests use separate PHP processes and clean up their own records.
+
+## Stock purchasing (Phase 7)
+
+After pulling this phase, run `& '.tools/php/php.exe' artisan migrate` and rebuild
+assets with `npm run build` (or the local toolchain commands above). Existing
+administrators receive purchasing permission through the migration.
+
+1. Open **Purchases → New purchase**.
+2. Search for an active supplier and choose a result.
+3. Enter the purchase date, optional invoice reference, payment status and notes.
+4. Search by product name or SKU, choose a variant, and enter quantity and unit
+   cost in TZS. Use **Add item** for other variants; use each variant only once.
+5. Select **Save draft and review**. Check the server-calculated totals.
+6. Choose **Edit draft**, **Cancel draft**, or **Confirm purchase**. Confirmation
+   asks you to review the total and then receives all items into stock.
+
+Drafts do not change stock. Confirmation updates physical quantities and weighted
+average costs, preserves reservations, and records permanent movement history.
+Confirmed purchases cannot be edited, cancelled or deleted through these screens.
+Repeated confirmation returns a conflict without adding stock again. If another
+user edits your draft, reload and review it before confirming.
+
+Purchases receive references such as `MFS-PUR-000001`. Supplier detail pages now
+show actual purchase history, including after a supplier is deactivated. Search
+lists by reference, invoice or supplier; filter by status, payment status and date.
+Salespeople cannot access purchase costs or purchasing actions.
+
+Payment status is informational only; selecting Paid does not verify payment or
+create accounting entries. Supplier credit/payables and confirmed-purchase reversal
+policy remain TBD. Opening existing store stock is the next implementation phase.

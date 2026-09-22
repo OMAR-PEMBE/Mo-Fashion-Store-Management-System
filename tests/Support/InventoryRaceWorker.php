@@ -2,12 +2,15 @@
 
 use App\Enums\InventoryMovementType;
 use App\Models\ProductVariant;
+use App\Models\Purchase;
 use App\Models\User;
 use App\Services\InventoryService;
+use App\Services\PurchaseService;
 use App\Support\InventoryContext;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 // Invoked by the MySQL concurrency test, never by a web route.
 require __DIR__.'/../../vendor/autoload.php';
@@ -40,6 +43,11 @@ try {
     $context = new InventoryContext($actor, $key, 'concurrency_test', 1);
     $service = app(InventoryService::class);
     file_put_contents($resolved.'/'.$worker.'.attempting', 'attempting');
+    if ($mode === 'confirm') {
+        $purchase = app(PurchaseService::class)->confirm(Purchase::findOrFail((int) $quantity), $actor, 1);
+        echo json_encode(['status' => 'success', 'movement_id' => $purchase->id]);
+        exit(0);
+    }
     $movement = match ($mode) {
         'increase' => $service->increase($variant, (int) $quantity, InventoryMovementType::Purchase, $context),
         'decrease' => $service->decrease($variant, (int) $quantity, InventoryMovementType::Sale, $context),
@@ -48,6 +56,8 @@ try {
     echo json_encode(['status' => 'success', 'movement_id' => $movement->id]);
 } catch (ValidationException) {
     echo json_encode(['status' => 'rejected']);
+} catch (HttpException $exception) {
+    echo json_encode(['status' => 'rejected', 'code' => $exception->getStatusCode()]);
 } catch (Throwable $exception) {
     echo json_encode(['status' => 'error', 'class' => $exception::class]);
     exit(1);

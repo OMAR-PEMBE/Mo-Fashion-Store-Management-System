@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductVariantController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
@@ -25,6 +26,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::middleware('can:purchases.manage')->group(function () {
+        Route::get('/purchases/lookup', [PurchaseController::class, 'lookup'])->name('purchases.lookup');
+        Route::post('/purchases/{purchase}/confirm', [PurchaseController::class, 'confirm'])->name('purchases.confirm');
+        Route::post('/purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
+        Route::resource('purchases', PurchaseController::class)->except('destroy');
+    });
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
     Route::get('/inventory/{variant}/movements', [InventoryController::class, 'movements'])->withTrashed()->name('inventory.movements');
     Route::resource('suppliers', SupplierController::class)->except('destroy');

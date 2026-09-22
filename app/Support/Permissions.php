@@ -7,6 +7,7 @@ class Permissions
     public const ALL = [
         'reference-data.manage',
         'suppliers.manage',
+        'purchases.manage',
         'products.view', 'products.create', 'products.update', 'products.view_cost',
         'inventory.view', 'inventory.adjust',
         'customers.create', 'sales.create', 'sales.view_all', 'orders.create',

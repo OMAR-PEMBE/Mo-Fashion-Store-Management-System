@@ -52,7 +52,9 @@ class SupplierController extends Controller
     {
         Gate::authorize('view', $supplier);
 
-        return view('suppliers.show', compact('supplier'));
+        $purchases = Gate::allows('purchases.manage') ? $supplier->purchases()->orderByDesc('id')->paginate(10) : null;
+
+        return view('suppliers.show', compact('supplier', 'purchases'));
     }
 
     public function edit(Supplier $supplier): View

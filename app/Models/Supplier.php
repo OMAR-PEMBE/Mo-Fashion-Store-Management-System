@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
@@ -18,6 +19,8 @@ class Supplier extends Model
         return ['is_active' => 'boolean'];
     }
 
-    // Phase 7 integration point: purchases(): HasMany using purchases.supplier_id.
-    // Add the relation when Purchase and its table exist; never fake purchase history.
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(Purchase::class);
+    }
 }
