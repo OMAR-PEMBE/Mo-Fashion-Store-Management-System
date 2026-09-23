@@ -39,6 +39,11 @@ class Sale extends Model
         return $this->hasMany(Refund::class);
     }
 
+    public function exchanges(): HasMany
+    {
+        return $this->hasMany(Exchange::class);
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class)->withTrashed();

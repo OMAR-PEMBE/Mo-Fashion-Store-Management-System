@@ -855,6 +855,9 @@ Create
 
 # 18. Phase 14 — Exchanges
 
+Implemented and verified. See `docs/PHASE_14.md` for the approved three-day,
+cross-product policy, shared return/refund limits and verification results.
+
 ## Goal
 
 Support exchanging sold products while maintaining correct stock and financial history.

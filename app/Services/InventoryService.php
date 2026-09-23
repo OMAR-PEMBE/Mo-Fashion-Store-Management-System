@@ -79,7 +79,7 @@ class InventoryService
         $permission = match ($mode) {
             'reserve', 'release', 'complete' => 'orders.create',
             default => match ($type) {
-                Type::Sale => 'sales.create', Type::Return => 'returns.approve', default => 'inventory.adjust'
+                Type::Sale => 'sales.create', Type::Return => 'returns.approve', Type::ExchangeIn, Type::ExchangeOut => 'exchanges.create', default => 'inventory.adjust'
             },
         };
         $actor = $context->actor->fresh();
@@ -114,7 +114,7 @@ class InventoryService
                 if ($existing) {
                     return $this->replay($existing, $hash);
                 }
-                if (in_array($mode, ['reserve', 'decrease']) && in_array($type, [Type::Reservation, Type::Sale])) {
+                if (in_array($mode, ['reserve', 'decrease']) && in_array($type, [Type::Reservation, Type::Sale, Type::ExchangeOut])) {
                     if ($variant->trashed() || ! ProductVariant::available()->whereKey($variant->id)->whereHas('product', fn ($q) => $q->available()->whereNull('deleted_at'))->exists()) {
                         $this->fail('This variant is not available for new sales or reservations.');
                     }

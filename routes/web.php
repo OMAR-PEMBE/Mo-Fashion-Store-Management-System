@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OpeningStockController;
 use App\Http\Controllers\OrderController;
@@ -32,6 +33,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::middleware('can:exchanges.create')->group(function () {
+        Route::get('/exchanges/lookup', [SaleController::class, 'lookup'])->name('exchanges.lookup');
+        Route::resource('exchanges', ExchangeController::class)->only(['index', 'create', 'store', 'show']);
+        Route::post('/exchanges/{exchange}/complete', [ExchangeController::class, 'complete'])->name('exchanges.complete');
+        Route::post('/exchanges/{exchange}/cancel', [ExchangeController::class, 'cancel'])->name('exchanges.cancel');
+    });
     Route::middleware('can:refunds.create')->group(function () {
         Route::resource('refunds', RefundController::class)->only(['index', 'create', 'store', 'show']);
         foreach (['approve', 'complete', 'close'] as $action) {

@@ -1444,6 +1444,18 @@ Integrated refund APIs may be added later if the selected provider supports them
 
 # 67. Exchanges API
 
+Phase 14 implements session-authenticated, CSRF-protected internal routes:
+GET /exchanges, /exchanges/create, /exchanges/lookup and /exchanges/{exchange};
+POST /exchanges, /exchanges/{exchange}/complete and /exchanges/{exchange}/cancel.
+These routes use ExchangeService; the public /api/v1 contract below remains future
+integration work. Creation also requires request_key and reason, accepts optional
+notes, and ignores client prices/totals in favour of catalogue prices. It creates
+a PENDING review without reserving stock. Completion rechecks the 72-hour window,
+shared return/refund eligibility, active replacement references and available stock.
+Price differences require settlement_confirmed, payment_method and optional
+payment_reference; refund differences require administrator refund permissions.
+Cancellation requires a reason and is limited to PENDING records.
+
 ## POST /api/v1/exchanges
 
 Request:

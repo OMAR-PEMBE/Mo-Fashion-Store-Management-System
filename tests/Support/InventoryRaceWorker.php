@@ -1,12 +1,14 @@
 <?php
 
 use App\Enums\InventoryMovementType;
+use App\Models\Exchange;
 use App\Models\Order;
 use App\Models\ProductVariant;
 use App\Models\Purchase;
 use App\Models\Refund;
 use App\Models\SaleReturn;
 use App\Models\User;
+use App\Services\ExchangeService;
 use App\Services\InventoryService;
 use App\Services\OpeningStockService;
 use App\Services\OrderService;
@@ -51,6 +53,11 @@ try {
     $context = new InventoryContext($actor, $key, 'concurrency_test', 1);
     $service = app(InventoryService::class);
     file_put_contents($resolved.'/'.$worker.'.attempting', 'attempting');
+    if ($mode === 'exchangecomplete') {
+        $exchange = app(ExchangeService::class)->complete(Exchange::findOrFail((int) $quantity), ['settlement_confirmed' => 1, 'payment_method' => 'CASH'], $actor);
+        echo json_encode(['status' => 'success', 'movement_id' => $exchange->id]);
+        exit(0);
+    }
     if (in_array($mode, ['refundapprove', 'refundcomplete'])) {
         $service = app(RefundService::class);
         $refund = Refund::findOrFail((int) $quantity);

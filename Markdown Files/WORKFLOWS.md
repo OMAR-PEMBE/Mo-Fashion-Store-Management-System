@@ -1119,6 +1119,26 @@ Net Revenue = 40,000
 
 # 48. Exchange Workflow
 
+Approved policy: any available replacement product, within three days (72 hours)
+of original sale completion, including the exact deadline. Original sale matching
+is required. Salespeople operate on their own sales; authorized administrators
+can access all sales. Creation saves a reviewed price quote without reserving stock.
+
+Completion rechecks quantities against completed returns AND exchanges. Returned
+credit is the original discounted line value proportional to quantity, rounded
+down to two decimals. Approved/completed refunds and completed exchange credit
+reduce financial eligibility. Replacement prices come from the catalogue at
+creation; replacement cost is captured at completion. Original sale snapshots
+remain unchanged. SELLABLE items generate EXCHANGE_IN; all replacements generate
+EXCHANGE_OUT, without consuming other orders' reservations. All changes are atomic.
+
+Staff manually acknowledge extra money received. When money is due back, an
+administrator approves and confirms payment using a supported method; completion
+creates and completes a linked refund in the same transaction. It does not send
+money or verify a payment provider. Pending exchanges may be cancelled with a
+reason; completed exchanges cannot be cancelled or replayed. Replacement lines
+do not create a new sale or restart the original three-day window.
+
 ## Actor
 
 Authorized staff

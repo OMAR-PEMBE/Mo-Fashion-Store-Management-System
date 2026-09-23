@@ -1403,8 +1403,10 @@ The following are still unresolved.
 
 ## Exchanges
 
-- Exchange period: `TBD`
-- Whether completely different products may be exchanged: `TBD`
+- Exchange period: approved three days (72 hours) from original sale completion,
+  inclusive of the deadline; creation and completion both enforce eligibility.
+- Completely different products: approved, subject to replacement availability.
+- Refund differences: administrators approve and complete; salespeople may request.
 
 ## Supplier Payments
 

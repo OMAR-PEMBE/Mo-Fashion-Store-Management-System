@@ -54,6 +54,11 @@ completion, flexible refund methods, partial amounts and duplicate protection.
 Open **Refunds**, or request one from the original sale/completed return. See the
 [Phase 13 report](docs/PHASE_13.md).
 
+Exchanges now support any available replacement product within three days of the
+original sale, equal-value swaps, additional payments and administrator-completed
+refund differences. Open **Exchanges** or **Start exchange** on a sale. See the
+[Phase 14 report](docs/PHASE_14.md).
+
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
 is not yet supplied; the UI uses the approved [UI.md](<Markdown Files/UI.md>) design tokens.
 

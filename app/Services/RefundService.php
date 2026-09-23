@@ -37,6 +37,11 @@ class RefundService
             $query->lockForUpdate();
         }
         $rows = $query->get(['refund_items.sale_item_id', 'refund_items.amount', 'refunds.return_id']);
+        $exchanges = DB::table('exchange_items')->join('exchanges', 'exchanges.id', '=', 'exchange_items.exchange_id')->where('exchanges.sale_id', $sale->id)->where('exchanges.status', 'COMPLETED')->where('exchange_items.item_type', 'RETURNED');
+        if ($lock) {
+            $exchanges->lockForUpdate();
+        }
+        $credits = $exchanges->get(['exchange_items.sale_item_id', 'exchange_items.applied_credit']);
         $returnItems = null;
         if ($returnId) {
             $return = SaleReturn::whereKey($returnId)->where('sale_id', $sale->id)->where('status', 'COMPLETED')->first();
@@ -48,14 +53,17 @@ class RefundService
         $limits = [];
         foreach ($sale->items()->get() as $item) {
             $remaining = BigDecimal::of($item->line_total);
+            foreach ($credits->where('sale_item_id', $item->id) as $credit) {
+                $remaining = $remaining->minus((string) $credit->applied_credit);
+            }
             foreach ($rows->where('sale_item_id', $item->id) as $row) {
-                $remaining = $remaining->minus($row->amount);
+                $remaining = $remaining->minus((string) $row->amount);
             }
             if ($returnItems !== null) {
                 $linked = $returnItems->get($item->id);
                 $cap = $linked ? BigDecimal::of($item->line_total)->multipliedBy($linked->quantity)->dividedBy($item->quantity, 2, RoundingMode::Down) : BigDecimal::of('0.00');
                 foreach ($rows->where('sale_item_id', $item->id)->where('return_id', $returnId) as $row) {
-                    $cap = $cap->minus($row->amount);
+                    $cap = $cap->minus((string) $row->amount);
                 }
                 if ($cap->isLessThan($remaining)) {
                     $remaining = $cap;
@@ -151,7 +159,7 @@ class RefundService
                 if ($next === 'COMPLETED' && $refund->return_id) {
                     foreach ($items as $item) {
                         $linked = DB::table('return_items')->where('return_id', $refund->return_id)->where('sale_item_id', $item->sale_item_id)->lockForUpdate()->first();
-                        DB::table('return_items')->where('id', $linked->id)->update(['refund_amount' => (string) BigDecimal::of($linked->refund_amount)->plus($item->amount), 'updated_at' => now()]);
+                        DB::table('return_items')->where('id', $linked->id)->update(['refund_amount' => (string) BigDecimal::of((string) $linked->refund_amount)->plus($item->amount), 'updated_at' => now()]);
                     }
                 }
             }

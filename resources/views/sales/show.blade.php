@@ -11,5 +11,8 @@
     <div class="mt-6"><x-action-link :href="route('refunds.create', ['sale_number' => $sale->sale_number])">Request refund</x-action-link></div>
     <x-card title="Refund history" class="mt-6"><ul class="space-y-3 text-sm">@forelse($sale->refunds as $refund)<li><a class="underline" href="{{ route('refunds.show', $refund) }}">{{ $refund->refund_number }}</a> · {{ $refund->status->value }} · TZS {{ $refund->amount }}</li>@empty<li>No refunds recorded.</li>@endforelse</ul></x-card>
     @endcan
+    @can('exchanges.create')
+    <div class="mt-6"><x-action-link :href="route('exchanges.create', ['sale_number' => $sale->sale_number])">Start exchange</x-action-link></div><x-card title="Exchange history" class="mt-6"><ul class="space-y-3 text-sm">@forelse($sale->exchanges as $exchange)<li><a class="underline" href="{{ route('exchanges.show', $exchange) }}">{{ $exchange->exchange_number }}</a> · {{ $exchange->status->value }}</li>@empty<li>No exchanges recorded.</li>@endforelse</ul></x-card>
+    @endcan
     <a href="{{ route('sales.index') }}" class="mt-6 inline-block text-sm underline">Back to sales history</a>
 </x-layouts.app>

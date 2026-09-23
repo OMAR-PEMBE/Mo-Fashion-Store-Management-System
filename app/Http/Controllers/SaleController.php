@@ -103,7 +103,7 @@ class SaleController extends Controller
     public function show(Request $request, Sale $sale)
     {
         abort_unless($request->user()->hasPermission('sales.view_all') || $sale->salesperson_id === $request->user()->id, 403);
-        $sale->load(['customer', 'salesperson', 'items.variant.product', 'returns', 'refunds']);
+        $sale->load(['customer', 'salesperson', 'items.variant.product', 'returns', 'refunds', 'exchanges']);
 
         return view('sales.show', compact('sale'));
     }

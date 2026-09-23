@@ -2513,6 +2513,17 @@ It shall define:
 
 # 157. Document Status
 
+### Phase 14 exchange controls
+
+exchanges.create is granted to administrator and salesperson roles. Every service
+action refreshes actor permissions and enforces original sale ownership unless
+sales.view_all is granted. Refund-due completion additionally requires the actual
+administrator role and both refunds.approve and refunds.complete permissions.
+Client prices, costs, totals, statuses and processor fields are not authoritative.
+Costs remain hidden from staff without products.view_cost. CSRF, audit records,
+idempotent creation, transaction rollback and sale/inventory row locks protect
+the shared return/refund/exchange limits. No provider payment is initiated.
+
 **Status: Security Architecture Ready for Implementation**
 
 Security controls affecting Version 1 development are defined.

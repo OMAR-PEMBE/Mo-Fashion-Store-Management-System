@@ -1,5 +1,5 @@
 // Livewire initializes its bundled Alpine instance through @livewireScripts.
-window.saleForm = (customer, lines, lookupUrl) => ({
+window.saleForm = (customer, lines, lookupUrl, allowUnavailable = false) => ({
     customer, lines, query: '', customersQuery: '', results: [], customers: [], error: '', searchRequest: 0,
     async search(kind) {
         const request = ++this.searchRequest;
@@ -14,7 +14,7 @@ window.saleForm = (customer, lines, lookupUrl) => ({
         } catch { this.error = 'Search failed. Please try again.'; }
     },
     add(result) {
-        if(result.available < 1) return;
+        if(result.available < 1 && !allowUnavailable) return;
         const line = this.lines.find(line => Number(line.product_variant_id) === result.id);
         if(line) line.quantity = String(Number(line.quantity) + 1);
         else if(this.lines.length < 100) this.lines.push({product_variant_id:result.id,label:result.label,quantity:'1',unit_price:result.unit_price,discount_amount:'0.00'});

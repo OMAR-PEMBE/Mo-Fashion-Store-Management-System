@@ -541,8 +541,12 @@ The following still require confirmation.
 
 ### Exchanges
 
-- Is there a deadline for exchanges?
-- Can customers exchange an item for a completely different product?
+- Approved: exchanges must be completed within three days (72 hours) of the
+  original sale, including the exact deadline, matching the return window.
+- Approved: customers may choose any available replacement product, including
+  a different product or another size/colour. The original recorded sale is required.
+- Additional payments are manually acknowledged. A refund difference requires
+  administrator approval and completion under the approved refund policy.
 
 ### Stock Purchasing
 

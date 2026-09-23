@@ -335,7 +335,7 @@ details require the existing cost-view permission.
 Completed-sale cancellation remains disabled because refund and physical stock
 return rules are not yet approved. Do not edit/delete completed records in the
 database. Payment methods are staff records, not provider-verified payments.
-Exchanges remain in a later phase. Returns and refunds are described below.
+Returns, refunds and exchanges are described below.
 
 ## Orders and reservations (Phase 11)
 
@@ -414,3 +414,22 @@ down to two decimals, and all refunds also share the original sale-line cap.
 The three-day merchandise-return deadline does not restrict later money recording.
 Original sale/customer gross purchase statistics stay intact; completed refunds
 are separate financial records for calculating net revenue in later reports.
+
+## Exchanges (Phase 14)
+
+Open **Exchanges → New exchange**, or **Start exchange** on the original sale.
+Find the sale number, enter returned quantities and conditions, search for any
+replacement product, and save for review. Complete within three days (72 hours)
+of the original sale. Saving does not reserve replacement stock.
+
+For an equal-value exchange, inspect the items and confirm completion. For a
+higher-value replacement, record the additional payment received. For a cheaper
+replacement, an administrator must approve and confirm the refund using the
+chosen payment method. Money is handled outside the application. The completed
+exchange links its refund record automatically.
+
+Salespeople handle their own sales. Only sellable returned items re-enter stock.
+Pending exchanges can be cancelled with a reason. Original sale history and
+combined return/refund limits prevent processing the same item or credit twice.
+Replacement items remain exchange history; they do not start a new sale or window.
+See [Phase 14 report](PHASE_14.md) for verification and current limitations.

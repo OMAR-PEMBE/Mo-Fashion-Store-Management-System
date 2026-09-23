@@ -24,6 +24,24 @@ class RefundTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_fractional_linked_refunds_preserve_cents_in_limits_and_return_history(): void
+    {
+        $sale = $this->sale();
+        $returns = app(ReturnService::class);
+        $return = $returns->create(['sale_id' => $sale->id, 'request_key' => 'return:cents', 'reason' => 'Test', 'proof_type' => 'SALE_RECORD', 'items' => [['sale_item_id' => $sale->items->first()->id, 'quantity' => 1, 'condition' => 'SELLABLE']]], $this->admin);
+        $returns->approve($return, $this->admin);
+        $returns->complete($return, $this->admin);
+        $service = app(RefundService::class);
+        foreach (['0.30', '0.40'] as $amount) {
+            $refund = $service->create($this->input($sale, $amount, 'refund:'.$amount) + ['return_id' => $return->id], $this->admin);
+            $service->approve($refund, ['refund_method' => 'CASH'], $this->admin);
+            $service->complete($refund, ['payment_returned' => 1], $this->admin);
+        }
+        $this->assertSame('0.70', $return->fresh()->items->first()->refund_amount);
+        $this->assertSame('133999.30', array_values($service->available($sale))[0]);
+        $this->assertSame('44665.96', array_values($service->available($sale, $return->id))[0]);
+    }
+
     private User $admin;
 
     private Supplier $supplier;

@@ -50,7 +50,13 @@ class ReturnService
         }
         $returned = $query->get(['return_items.sale_item_id', 'return_items.quantity'])->groupBy('sale_item_id')->map(fn ($rows) => $rows->sum('quantity'));
 
-        return $sale->items()->get()->mapWithKeys(fn ($item) => [$item->id => max(0, $item->quantity - ($returned[$item->id] ?? 0))])->all();
+        $exchanges = DB::table('exchange_items')->join('exchanges', 'exchanges.id', '=', 'exchange_items.exchange_id')->where('exchanges.sale_id', $sale->id)->where('exchanges.status', 'COMPLETED')->where('exchange_items.item_type', 'RETURNED');
+        if ($lock) {
+            $exchanges->lockForUpdate();
+        }
+        $exchanged = $exchanges->get(['exchange_items.sale_item_id', 'exchange_items.quantity'])->groupBy('sale_item_id')->map(fn ($rows) => $rows->sum('quantity'));
+
+        return $sale->items()->get()->mapWithKeys(fn ($item) => [$item->id => max(0, $item->quantity - ($returned[$item->id] ?? 0) - ($exchanged[$item->id] ?? 0))])->all();
     }
 
     public function create(array $input, User $actor): SaleReturn

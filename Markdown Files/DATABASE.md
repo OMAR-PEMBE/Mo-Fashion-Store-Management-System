@@ -1449,6 +1449,20 @@ Refunds shall not exceed the amount actually charged.
 
 Represents product exchange transactions.
 
+Phase 14 implementation adds unique request_key/request_hash, created_by, reason,
+nullable payment_method/payment_reference, nullable unique refund_id, and
+cancelled_by/cancelled_at/cancellation_reason. processed_by is nullable until
+completion. EXCHANGE numbering uses document_sequences with prefix MFS-EXC-.
+Foreign keys retain financial history with restricted deletion.
+
+exchange_items additionally stores applied_credit, refund_amount, unit_cost and
+line_cost as DECIMAL(15,2); cost fields are nullable until captured. Each exchange
+has unique item_type/product_variant_id lines. Returned lines reference original
+sale items and retain original cost. Replacement lines capture WAC at completion.
+Completed applied_credit and approved/completed refund allocations jointly reduce
+remaining refundable sale-item value. The linked refund records refund_due;
+it must not be counted twice in financial reports. See docs/PHASE_14.md.
+
 ## Fields
 
 | Column | Type |
