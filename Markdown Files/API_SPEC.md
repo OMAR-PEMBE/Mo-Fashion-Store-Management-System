@@ -1519,6 +1519,21 @@ Server shall:
 
 # 70. Expenses API
 
+Phase 15 internal UI routes use authenticated sessions and CSRF: GET /expenses,
+/expenses/create, /expenses/{expense}, /expenses/{expense}/edit; POST /expenses;
+PUT /expenses/{expense}. List filters are q, category_id, date_from, date_to and
+recorded_by. Creation requires request_key, expense_category_id, expense_date and
+nonnegative amount; description is optional. Updates require the viewed revision.
+Client recorder/number fields are ignored; purchase_id, supplier_id and items
+payloads are prohibited. Stale edits or changed/other-user reuse of request keys
+return 409. Identical creation retries return the existing expense.
+
+GET /expense-categories, /expense-categories/create and /expense-categories/{id}/edit,
+POST /expense-categories and PUT /expense-categories/{id} manage name, description,
+is_active and edit revision. Inactive categories are retained on existing expenses
+but unavailable for new entries or reassignment. The public /api/v1 contract below
+remains future integration work; internal controllers reuse ExpenseService.
+
 ## GET /api/v1/expenses
 
 Filters:

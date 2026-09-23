@@ -433,3 +433,22 @@ Pending exchanges can be cancelled with a reason. Original sale history and
 combined return/refund limits prevent processing the same item or credit twice.
 Replacement items remain exchange history; they do not start a new sale or window.
 See [Phase 14 report](PHASE_14.md) for verification and current limitations.
+
+## Expenses (Phase 15)
+
+As an administrator, open **Expenses → Record expense**. Select an active
+operating-cost category, date and amount, optionally add a description, then save.
+Amounts use TZS and at most two decimal places; zero is permitted. Recording an
+expense does not send money. Supplier stock belongs in **Purchases**; customer
+delivery fees remain outside Version 1 accounting.
+
+Open an expense to inspect its details and audit history. **Edit expense** keeps
+the original recorder and saves previous/new values with the editor's identity.
+If another user changed the entry, reload it before making your correction.
+There is no expense deletion action.
+
+Use **Manage categories** to create, rename, deactivate or reactivate operating
+categories. Inactive categories remain on existing expenses but cannot be chosen
+for new ones. Filter expenses by description/number, category, date range or recorder.
+Salespeople have no expense access by default. Profit dashboards and reports are
+subsequent phases. See [Phase 15 report](PHASE_15.md).

@@ -909,6 +909,9 @@ Guided exchange flow.
 
 # 19. Phase 15 — Expense Management
 
+Implemented. See `docs/PHASE_15.md` for expense/category management, permissions,
+audit history, duplicate protection and verification results.
+
 ## Goal
 
 Track operating expenses separately from stock purchases.

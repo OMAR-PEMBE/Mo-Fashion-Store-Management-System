@@ -59,6 +59,10 @@ original sale, equal-value swaps, additional payments and administrator-complete
 refund differences. Open **Exchanges** or **Start exchange** on a sale. See the
 [Phase 14 report](docs/PHASE_14.md).
 
+Administrators can now record and correct operating expenses, manage expense
+categories, filter entries and inspect before/after audit history. Open **Expenses**.
+Supplier stock stays in Purchases. See the [Phase 15 report](docs/PHASE_15.md).
+
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
 is not yet supplied; the UI uses the approved [UI.md](<Markdown Files/UI.md>) design tokens.
 

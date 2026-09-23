@@ -1608,6 +1608,18 @@ Other
 
 # 65. expenses
 
+Phase 15 implementation adds unique request_key/request_hash for creation retry
+protection and an unsigned revision counter for optimistic edit checks. Numbering
+uses document_sequences (EXPENSE / MFS-EXP-). expense_categories also gains a
+revision counter. Category, recorder and numbering fields are foreign-key/index
+protected; financial records have no delete route. Expense and category writes
+include before/after audit records in the same transaction. recorded_by remains
+the original recorder after editing; audit_logs identifies each editor.
+
+amount is a nonnegative DECIMAL(15,2), including zero as specified in WORKFLOWS.md.
+The supported financial database is MySQL. The maximum decimal boundary is tested
+there because SQLite's numeric storage cannot preserve cents at that magnitude.
+
 ## Fields
 
 | Column | Type |

@@ -10,6 +10,6 @@ class ExpenseCategory extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'revision' => 'integer'];
     }
 }

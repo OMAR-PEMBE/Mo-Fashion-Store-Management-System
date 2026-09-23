@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ExchangeController;
+use App\Http\Controllers\ExpenseCategoryController;
+use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OpeningStockController;
 use App\Http\Controllers\OrderController;
@@ -33,6 +35,14 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::middleware('can:expenses.view')->group(function () {
+        Route::resource('expense-categories', ExpenseCategoryController::class)->except(['show', 'destroy'])->middleware('can:expense-categories.manage');
+        Route::get('/expenses/create', [ExpenseController::class, 'create'])->middleware('can:expenses.create')->name('expenses.create');
+        Route::resource('expenses', ExpenseController::class)->only(['index', 'show']);
+        Route::post('/expenses', [ExpenseController::class, 'store'])->middleware('can:expenses.create')->name('expenses.store');
+        Route::get('/expenses/{expense}/edit', [ExpenseController::class, 'edit'])->middleware('can:expenses.update')->name('expenses.edit');
+        Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->middleware('can:expenses.update')->name('expenses.update');
+    });
     Route::middleware('can:exchanges.create')->group(function () {
         Route::get('/exchanges/lookup', [SaleController::class, 'lookup'])->name('exchanges.lookup');
         Route::resource('exchanges', ExchangeController::class)->only(['index', 'create', 'store', 'show']);

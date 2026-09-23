@@ -64,6 +64,9 @@
             @can('exchanges.create')
                 <a href="{{ route('exchanges.index') }}" @if(request()->routeIs('exchanges.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('exchanges.*'), 'hover:bg-white/10' => !request()->routeIs('exchanges.*')])>Exchanges</a>
             @endcan
+            @can('expenses.view')
+                <a href="{{ route('expenses.index') }}" @if(request()->routeIs('expenses.*', 'expense-categories.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('expenses.*', 'expense-categories.*'), 'hover:bg-white/10' => !request()->routeIs('expenses.*', 'expense-categories.*')])>Expenses</a>
+            @endcan
             </nav>
             <div class="hidden px-9 py-8 text-xs leading-6 text-white/60 lg:block">Mo Fashion Store<br>Business Management System</div>
         </aside>

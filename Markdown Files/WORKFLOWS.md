@@ -1231,6 +1231,21 @@ No partial exchange shall be committed.
 
 # 52. Expense Entry Workflow
 
+Phase 15 provides category management, expense creation, filtering and audited
+corrections. Administrators receive expense permissions by default. Monetary input
+accepts zero through 9999999999999.99 with at most two fractional digits. Date is
+required; description is optional. Expenses are manually recorded operating costs,
+not outgoing payment instructions. Stock purchases stay in the Purchases module.
+
+The server assigns expense numbers and recorder identity. Repeated creation with
+the same key/payload/actor returns one record. Edits require the current revision,
+preserve the original recorder and write old/new values with the editor's identity.
+Expense and audit writes roll back together. Categories can be created, renamed,
+deactivated and reactivated; they are retained for history rather than deleted.
+Existing expenses may retain an inactive category during correction. Date/category/
+recorder/search filters apply to the paginated list. Profit summaries follow in
+the dashboard/report phases; this module does not modify stock or sales.
+
 ## Actor
 
 Administrator / authorized finance user

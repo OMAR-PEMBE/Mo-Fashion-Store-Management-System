@@ -2513,6 +2513,17 @@ It shall define:
 
 # 157. Document Status
 
+### Phase 15 expense controls
+
+expenses.view, expenses.create, expenses.update and expense-categories.manage are
+granted to administrators by default, not salespeople. Reads require expenses.view;
+writes additionally require the corresponding action permission. ExpenseService
+refreshes actor permissions before writes, including non-HTTP calls. Seeder reruns
+preserve revoked permissions. Expense/category changes are transactional and
+audited, with stale-revision rejection and CSRF-protected routes. No delete route
+is supplied, and expense model writes/deletes must use the service. Client totals,
+numbering and actor attribution cannot override server values.
+
 ### Phase 14 exchange controls
 
 exchanges.create is granted to administrator and salesperson roles. Every service
