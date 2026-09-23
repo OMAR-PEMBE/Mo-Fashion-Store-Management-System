@@ -51,7 +51,8 @@ class FoundationTest extends TestCase
 
     public function test_operational_modules_are_not_exposed_before_authentication_phase(): void
     {
-        foreach (['/users', '/api/v1/sales'] as $path) {
+        $this->get('/users')->assertRedirect('/login');
+        foreach (['/api/v1/sales'] as $path) {
             $this->get($path)->assertNotFound();
         }
     }

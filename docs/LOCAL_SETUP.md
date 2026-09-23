@@ -452,3 +452,100 @@ categories. Inactive categories remain on existing expenses but cannot be chosen
 for new ones. Filter expenses by description/number, category, date range or recorder.
 Salespeople have no expense access by default. Profit dashboards and reports are
 subsequent phases. See [Phase 15 report](PHASE_15.md).
+
+## Dashboard (Phase 16)
+
+Open **Overview** after signing in. The dashboard shows today and month-to-date
+activity in Africa/Dar_es_Salaam; use **Refresh overview** for current figures.
+Salespeople see their own sales/orders and permitted stock availability. Authorized
+owners also see net sales, adjusted COGS, gross profit, operating expenses and
+**Estimated Net Profit**. Expand **How these figures are calculated** to reconcile
+the components.
+
+Completed refunds and exchanges affect their completion period. Exchange refunds
+are counted once through their linked refund. Only sellable completed returns
+reverse original cost; damaged/defective items retain their cost as approved.
+Expenses use their expense date. Negative period totals are possible when a refund
+relates to an earlier sale. No history is rewritten.
+
+Stock counts cover active, available catalogue variants; available units exclude
+reservations. Low-stock counts exclude zero-availability variants, which appear
+as out of stock. Monthly rankings use gross original completed sales, before returns;
+replacement items remain in exchange history. Customer rankings exclude walk-ins.
+Orders created include all lifecycle statuses, not just outstanding orders.
+See [Phase 16 report](PHASE_16.md) for permissions and remaining reporting scope.
+
+## Reports (Phase 17)
+
+Open **Reports** and choose sales, inventory, purchases, customers, expenses,
+profit, returns, refunds or exchanges. Apply the relevant filters. Dates are
+inclusive in business local time and default to month-to-date. Status defaults
+to completed/confirmed; select **All** to include other statuses.
+
+Click a transaction number to inspect its original details. Product filters select
+whole matching documents; amounts are their complete totals. Customer figures
+are gross completed sales in the selected period. Inventory is a current balance
+snapshot, including archived/inactive catalogue items, and has no historical date
+filter. Profit uses the dashboard's approved rules; reconciliation links open
+source reports with matching dates.
+
+**Download CSV** exports all matching pages, not just the visible page, up to
+5,000 rows. Narrow the filters for larger results. Downloads escape spreadsheet
+formula prefixes and require the same report/module permissions as the screen.
+Salespeople have no report permission by default. PDF and queued large downloads
+remain future options. See [Phase 17 report](PHASE_17.md).
+
+## Phase 18 — Staff & access
+
+Sign in as an administrator and open **Staff & access**. Add a staff member using
+their name, sign-in email, optional phone, role, status and a temporary password.
+Confirm with your own administrator password, then share the temporary password
+privately. The staff member must change it in Profile before opening the workspace.
+
+Use **Edit** to change account details or deactivate/reactivate access. Deactivation
+retains transaction and audit history. Email, role and status changes revoke old
+sessions. The separate **Reset staff password** form assigns a new temporary
+password and revokes sessions/reset links without activating an inactive account.
+Change your own password through Profile.
+
+Open **Role permissions** to change access for all members of an existing role.
+Staff administration and refund approval/completion remain administrator-only.
+You cannot remove all administrator access, deactivate yourself or change your own
+role. If another administrator changes a record first, reload its form and review
+the current values. All mutations require your current password and are audited.
+
+No automated credential email, custom-role creation or account deletion is included.
+See [Phase 18 report](PHASE_18.md) for verification and implementation details.
+## Phase 19 — Audit logs and business settings
+
+Administrators can open **Audit logs**, filter by staff member, action, record type,
+record ID or local date range, then select a date to inspect before/after values.
+This history is read-only. Older entries may contain fewer details.
+
+Open **Business settings** to change the store name, phone, address, receipt footer
+or default low-stock threshold. Confirm with your administrator password. The name
+appears throughout the signed-in workspace; contact details/footer appear on sale
+summaries. The threshold prefills new variant forms, leaving existing variants
+unchanged. Historical financial amounts remain unchanged. These are current store
+details, not immutable receipt-header snapshots.
+
+TZS currency and Africa/Dar_es_Salaam time retain their established Version 1 values.
+If another administrator saves first, reload and review the settings before retrying.
+Changes are audited. No payment/integration secrets are editable here.
+## Phase 20 — Production configuration checks
+
+Run `php artisan app:check-security` using the project PHP executable. It displays
+only configuration problems, never secret values. It is expected to fail on the
+local HTTP/debug/log-mail configuration. Keep local development unchanged.
+
+Before production, configure APP_ENV=production, APP_DEBUG=false, a valid APP_KEY,
+a canonical HTTPS APP_URL, SESSION_SECURE_COOKIE=true, SESSION_HTTP_ONLY=true,
+SESSION_SAME_SITE=lax (or strict), file/database/redis sessions, and an actual mail
+transport. Do not include log/array in a production mail failover chain. Clear or
+rebuild configuration cache, then run the security check. Unsafe production
+configuration serves a generic 503; HTTP mutations are rejected and HTTPS requests
+must use the configured host and port.
+
+The deployment must separately verify TLS/proxy configuration, public-only web
+root, private database access, log permissions, mail delivery and backup restore.
+See [Phase 20 report](PHASE_20.md) for coverage and limits.

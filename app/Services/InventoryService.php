@@ -152,6 +152,13 @@ class InventoryService
                     'reason' => $context->reason, 'notes' => $context->notes, 'created_by' => $context->actor->id, 'created_at' => now(),
                 ]);
 
+                if (in_array($type, [Type::AdjustmentIn, Type::AdjustmentOut, Type::Damage, Type::Loss])) {
+                    app(AuditService::class)->record($context->actor, 'ADJUST_STOCK', 'product_variant', $variant->id,
+                        ['physical_quantity' => $physical, 'reserved_quantity' => $reserved],
+                        ['physical_quantity' => $nextPhysical, 'reserved_quantity' => $nextReserved,
+                            'movement_id' => $id, 'movement_type' => $type->value, 'reason' => $context->reason]);
+                }
+
                 return InventoryMovement::findOrFail($id);
             }, 3);
         } catch (UniqueConstraintViolationException $exception) {

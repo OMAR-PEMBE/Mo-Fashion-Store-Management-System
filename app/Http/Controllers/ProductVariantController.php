@@ -6,6 +6,7 @@ use App\Models\Colour;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Size;
+use App\Services\BusinessSettingsService;
 use App\Services\ProductCatalogueService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,13 +19,14 @@ class ProductVariantController extends Controller
     {
         Gate::authorize('update', $product);
 
-        return $this->form($product, new ProductVariant(['selling_price' => $product->default_selling_price]));
+        return $this->form($product, new ProductVariant(['selling_price' => $product->default_selling_price,
+            'low_stock_threshold' => (int) app(BusinessSettingsService::class)->values()['low_stock_default']]));
     }
 
     public function store(Request $request, Product $product, ProductCatalogueService $service): RedirectResponse
     {
         Gate::authorize('update', $product);
-        $service->saveVariant($product, $request->all());
+        $service->saveVariant($product, $request->all(), actor: $request->user());
 
         return redirect()->route('products.show', $product)->with('status', 'Variant created. No stock has been added.');
     }
@@ -39,7 +41,7 @@ class ProductVariantController extends Controller
     public function update(Request $request, Product $product, int $variant, ProductCatalogueService $service): RedirectResponse
     {
         Gate::authorize('update', $product);
-        $service->saveVariant($product, $request->all(), $product->variants()->findOrFail($variant));
+        $service->saveVariant($product, $request->all(), $product->variants()->findOrFail($variant), $request->user());
 
         return redirect()->route('products.show', $product)->with('status', 'Variant updated.');
     }

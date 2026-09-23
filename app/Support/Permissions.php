@@ -5,6 +5,7 @@ namespace App\Support;
 class Permissions
 {
     public const ALL = [
+        'audit.view', 'settings.manage',
         'expenses.view', 'expenses.create', 'expenses.update', 'expense-categories.manage',
         'reference-data.manage',
         'suppliers.manage',

@@ -27,6 +27,7 @@ class InventoryConcurrencyTest extends TestCase
             'no over-reservation' => ['reserve', 5, 4, false, 5, 4, 1],
             'no lost updates' => ['increase', 0, 3, false, 6, 0, 2],
             'duplicate retry' => ['increase', 0, 3, true, 3, 0, 2],
+            'adjustment audit retry' => ['adjust', 0, 3, true, 3, 0, 2],
             'duplicate opening setup' => ['opening', 0, 3, false, 3, 0, 1],
             'counter sale final item' => ['counter', 1, 1, false, 0, 0, 1],
             'counter sale retry' => ['counter', 2, 1, true, 1, 0, 2],
@@ -91,6 +92,9 @@ class InventoryConcurrencyTest extends TestCase
                 $this->assertSame('25.00', $variant->fresh()->weighted_average_cost);
                 $this->assertSame(1, DB::table('audit_logs')->where('action', 'OPENING_STOCK')->where('entity_id', $variant->id)->count());
                 $this->assertCount(1, array_filter($results, fn ($result) => ($result['code'] ?? null) === 409));
+            }
+            if ($mode === 'adjust') {
+                $this->assertSame(1, DB::table('audit_logs')->where('action', 'ADJUST_STOCK')->where('entity_id', $variant->id)->count());
             }
             $this->assertSame(($initial ? 1 : 0) + ($sameKey ? 1 : $successes), $variant->movements()->count());
             try {

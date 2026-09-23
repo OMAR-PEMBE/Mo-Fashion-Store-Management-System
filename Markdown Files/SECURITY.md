@@ -2513,6 +2513,33 @@ It shall define:
 
 # 157. Document Status
 
+### Phase 17 reporting and exports
+
+All report routes require reports.view and their module's permissions. Global
+sales/customer/return/refund/exchange reports additionally require sales.view_all;
+there is no implicit global-data access from reports.view alone. Purchases require
+purchases.manage and products.view_cost. Expenses require expenses.view; profit
+uses the same full financial permission set as the dashboard. Inventory reports
+require inventory.view and omit cost fields. Only authorized types appear in the
+report catalogue, and service authorization is repeated for reads and downloads.
+
+CSV exports are capped at 5,000 rows and 10 requests per minute. Every exported
+cell is protected against spreadsheet formula prefixes; SQL identifiers and
+selected columns are fixed in code, while filter values are bound parameters.
+No public export files are created. Responses are private/no-store, and HTML
+escapes transaction descriptions and names.
+
+### Phase 16 dashboard access
+
+DashboardService refreshes actor permissions before reading. Sales/recent sales/
+rankings require sales.create and are scoped to the actor without sales.view_all.
+Orders similarly require orders.create and are scoped without orders.manage.
+Stock requires inventory.view. Global customer creation counts require
+customers.manage. Financial summaries additionally require reports.view,
+products.view_cost, expenses.view and sales.view_all. Restricted financial data
+is absent from the returned view payload, not merely hidden in HTML. Responses
+are private/no-store and do not share cached role-specific results.
+
 ### Phase 15 expense controls
 
 expenses.view, expenses.create, expenses.update and expense-categories.manage are
@@ -2540,3 +2567,57 @@ the shared return/refund/exchange limits. No provider payment is initiated.
 Security controls affecting Version 1 development are defined.
 
 Provider-specific payment and WhatsApp security details remain `TBD` until official providers and their integration specifications are finalized.
+
+## Phase 18 staff access controls
+
+Staff administration requires both the Administrator role and `users.manage`.
+Every mutation reconfirms the actor's current password and authorization inside a
+transaction. Account and role revisions reject stale forms. All administrative
+mutations share an administrator-role row lock; simultaneous administrators cannot
+deactivate each other and leave the store without access. Self-deactivation and
+self-role changes are rejected. At least one active administrator must retain
+staff-management access. Refund approval/completion remain administrator-only.
+
+Account email, role or status changes and administrator password resets increment
+`security_version`, rotate the remember token, and revoke database sessions and
+password-reset links. Middleware compares the session version on every protected
+request, including with file sessions and after reactivation. Role permission
+changes take effect on subsequent requests for all members.
+
+Created/reset passwords are temporary; staff must change them in Profile before
+accessing business features. Passwords are hashed, never displayed or audited, and
+shared privately by the administrator. Existing accounts remain usable after the
+migration. Self-service password changes preserve the current session and invalidate
+other password-hash sessions. Audit writes are transactional and contain only
+allowlisted profile/permission changes. Accounts are deactivated, not deleted.
+## Phase 19 audit and settings controls
+
+Audit review and settings require the actual Administrator role plus `audit.view`
+or `settings.manage`, respectively. These permissions cannot be assigned to the
+Salesperson role through the UI/service. Settings saves reconfirm the actor's
+password and fresh authorization inside the same administrator-row mutex used by
+staff management. A hash of the displayed values rejects stale saves.
+
+Settings allowlist seven business fields. Secrets and negative-stock configuration
+cannot be changed through this form. Currency/timezone retain the established
+Version 1 values. Audit values are escaped, and password/token/secret/key fields
+are recursively redacted at new audit writes and again on audit detail display.
+Normal application routes cannot edit/delete audit entries. Legacy entries may
+lack an IP address or before/after values; no history is backfilled or invented.
+## Phase 20 application enforcement (2026-09-23)
+
+Global response middleware now sets nosniff, SAMEORIGIN, referrer and browser
+feature restrictions, private/no-store caching and CSP base-uri/object-src/
+frame-ancestors/form-action directives. Script-source enforcement remains a future
+Alpine/Livewire compatibility task; this is not a strict script CSP.
+
+Production requests fail closed on unsafe debug/key/URL/session/mail configuration.
+HTTP reads redirect to the configured HTTPS URL; HTTP writes are rejected. HTTPS
+host/port must match APP_URL. HSTS applies only to HTTPS production responses.
+`app:check-security` verifies configuration without revealing values. It does not
+verify TLS certificates, proxy trust, network exposure, disk access or backups.
+
+Product image uploads remain unimplemented, with no product-image upload endpoint.
+Future upload work must implement the file controls above. Existing transaction
+permissions, ownership, CSRF, validation and audit rules remain unchanged.
+See [Phase 20 evidence](../docs/PHASE_20.md).

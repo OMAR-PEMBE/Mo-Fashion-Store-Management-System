@@ -1,6 +1,6 @@
 <?php
 
 return [
-    // Locked Version 1 defaults; configurable business settings arrive in Phase 19.
+    // Currency is fixed for Version 1; editable store details live in system_settings.
     'currency' => 'TZS',
 ];

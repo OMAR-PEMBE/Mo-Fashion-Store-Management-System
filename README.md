@@ -63,6 +63,16 @@ Administrators can now record and correct operating expenses, manage expense
 categories, filter entries and inspect before/after audit history. Open **Expenses**.
 Supplier stock stays in Purchases. See the [Phase 15 report](docs/PHASE_15.md).
 
+**Overview** now shows today's and this month's sales, orders, stock availability,
+best sellers and recent activity. Authorized owners also see profit, expenses and
+calculation breakdowns; salespeople see their own sales/orders without restricted
+financial figures. See the [Phase 16 report](docs/PHASE_16.md).
+
+**Reports** now includes sales, inventory, purchases, customers, expenses, profit,
+returns, refunds and exchanges. Filter results, open source documents and download
+protected CSV files. Profit shares the dashboard's approved calculations. See the
+[Phase 17 report](docs/PHASE_17.md).
+
 Read [AGENTS.md](<Markdown Files/AGENTS.md>) before contributing. The screen-by-screen `UI_SPEC.md`
 is not yet supplied; the UI uses the approved [UI.md](<Markdown Files/UI.md>) design tokens.
 
@@ -84,3 +94,14 @@ php artisan serve --host=127.0.0.1
 
 Use `public/` as the web document root. Do not serve the repository root.
 Do not deploy this foundation as a finished operational system.
+
+
+Staff administration is available under **Staff & access** for administrators.
+See [Phase 18](docs/PHASE_18.md) for account, permission and password workflows.
+
+
+Phase 19 adds administrator **Audit logs** and **Business settings** screens.
+See [Phase 19 verification](docs/PHASE_19.md).
+
+Production application checks: `php artisan app:check-security`.
+See [Phase 20 security review](docs/PHASE_20.md); local development is expected to fail production checks.

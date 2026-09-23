@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#FAF8F3">
-    <title>{{ $title }} · {{ config('app.name') }}</title>
+    <title>{{ $title }} · {{ $business['business_name'] }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -15,11 +15,11 @@
     <div class="min-h-screen lg:grid lg:grid-cols-[260px_1fr]" x-data="{ navigationOpen: false }">
         <aside class="border-b border-border bg-text-primary text-white lg:min-h-screen lg:border-b-0">
             <div class="flex items-center justify-between px-6 py-7 lg:px-8 lg:py-10">
-                <a href="{{ route('home') }}" class="flex items-center gap-3" aria-label="Mo Fashion Store home">
-                    <span class="flex size-11 items-center justify-center rounded-xl bg-primary text-xl font-bold text-text-primary">M</span>
-                    <span><span class="block text-lg font-bold tracking-tight">Mo Fashion</span><span class="block text-xs tracking-[0.2em] text-white/70">STORE</span></span>
+                <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-3" aria-label="{{ $business['business_name'] }} home">
+                    <span class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-xl font-bold text-text-primary">M</span>
+                    <span class="min-w-0 break-words text-lg font-bold tracking-tight">{{ $business['business_name'] }}</span>
                 </a>
-                <button type="button" class="rounded-lg border border-white/30 px-3 py-2 text-sm lg:hidden" @click="navigationOpen = !navigationOpen" :aria-expanded="navigationOpen" aria-controls="main-navigation">Menu</button>
+                <button type="button" class="ml-3 shrink-0 rounded-lg border border-white/30 px-3 py-2 text-sm lg:hidden" @click="navigationOpen = !navigationOpen" :aria-expanded="navigationOpen" aria-controls="main-navigation">Menu</button>
             </div>
             <nav id="main-navigation" aria-label="Main navigation" class="px-5 pb-6 lg:block" :class="navigationOpen ? 'block' : 'hidden lg:block'">
                 <p class="px-4 pb-3 text-xs font-medium uppercase tracking-[0.18em] text-white/60">Workspace</p>
@@ -67,6 +67,12 @@
             @can('expenses.view')
                 <a href="{{ route('expenses.index') }}" @if(request()->routeIs('expenses.*', 'expense-categories.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('expenses.*', 'expense-categories.*'), 'hover:bg-white/10' => !request()->routeIs('expenses.*', 'expense-categories.*')])>Expenses</a>
             @endcan
+            @can('reports.view')<a href="{{ route('reports.index') }}" @if(request()->routeIs('reports.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('reports.*'), 'hover:bg-white/10' => !request()->routeIs('reports.*')])>Reports</a>@endcan
+            @if(auth()->user()?->role?->slug === 'administrator')@can('users.manage')<a href="{{ route('users.index') }}" @if(request()->routeIs('users.*', 'roles.*')) aria-current="page" @endif @class(['block rounded-xl px-4 py-3 text-sm font-semibold', 'bg-primary text-text-primary' => request()->routeIs('users.*', 'roles.*'), 'hover:bg-white/10' => !request()->routeIs('users.*', 'roles.*')])>Staff &amp; access</a>@endcan @endif
+                @if(auth()->user()->role?->slug === 'administrator')
+                    @can('audit.view')<a href="{{ route('audit.index') }}" class="block rounded-lg px-4 py-3 text-sm font-semibold hover:bg-white/10">Audit logs</a>@endcan
+                    @can('settings.manage')<a href="{{ route('settings.edit') }}" class="block rounded-lg px-4 py-3 text-sm font-semibold hover:bg-white/10">Business settings</a>@endcan
+                @endif
             </nav>
             <div class="hidden px-9 py-8 text-xs leading-6 text-white/60 lg:block">Mo Fashion Store<br>Business Management System</div>
         </aside>
@@ -88,7 +94,7 @@
                 </div>
             </header>
             <main id="main-content" tabindex="-1" class="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-14">{{ $slot }}</main>
-            <footer class="px-6 py-6 text-xs text-text-secondary lg:px-10">Mo Fashion Store · Built around your business.</footer>
+            <footer class="px-6 py-6 text-xs text-text-secondary lg:px-10">{{ $business['business_name'] }} · Built around your business.</footer>
         </div>
     </div>
     @livewireScripts

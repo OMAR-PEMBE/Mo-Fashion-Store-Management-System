@@ -263,6 +263,12 @@ As a staff member, I want to securely log in so that I can access only the funct
 
 # 11. Dashboard Module
 
+Phase 16 is implemented; see docs/PHASE_16.md. Owner-approved profit policy keeps
+the original cost of damaged/defective non-sellable returns. Only sellable completed
+returns/exchange receipts reverse historical cost. Exchange replacements add their
+captured cost. The dashboard displays today/month-to-date figures using local
+business time and excludes restricted financial data from salesperson payloads.
+
 ## Purpose
 
 Provide the owner with an immediate view of business performance.

@@ -38,11 +38,17 @@ class ProductCatalogueService
                 if (! $category || (! $category->is_active && ($data['is_active'] || $product->category_id != $category->id))) {
                     throw ValidationException::withMessages(['category_id' => 'Choose an active category.']);
                 }
+                $before = $product->exists ? $product->default_selling_price : null;
+                $existing = $product->exists;
                 $product->fill($data);
                 if (! $product->exists) {
                     $product->created_by = $actor->id;
                 }
                 $product->save();
+                if ($existing && $before !== $product->default_selling_price) {
+                    app(AuditService::class)->record($actor, 'CHANGE_PRODUCT_PRICE', 'product', $product->id,
+                        ['default_selling_price' => $before], ['default_selling_price' => $product->default_selling_price]);
+                }
 
                 return $product;
             });
@@ -51,11 +57,11 @@ class ProductCatalogueService
         }
     }
 
-    public function saveVariant(Product $product, array $input, ?ProductVariant $variant = null): ProductVariant
+    public function saveVariant(Product $product, array $input, ?ProductVariant $variant = null, ?User $actor = null): ProductVariant
     {
         $input = $this->normalize($input, 'sku');
         try {
-            return DB::transaction(function () use ($product, $input, $variant) {
+            return DB::transaction(function () use ($product, $input, $variant, $actor) {
                 $product = Product::lockForUpdate()->findOrFail($product->id);
                 $variant = $variant ? $product->variants()->lockForUpdate()->findOrFail($variant->id) : new ProductVariant;
                 $data = Validator::make($input, [
@@ -86,10 +92,16 @@ class ProductCatalogueService
                 if ($duplicate) {
                     throw ValidationException::withMessages(['size_id' => 'This size/colour combination already exists. Edit or restore the existing variant.']);
                 }
+                $before = $variant->exists ? $variant->selling_price : null;
+                $existing = $variant->exists;
                 $variant->fill($data);
                 $variant->product()->associate($product);
                 $variant->save();
                 app(InventoryService::class)->initialize($variant);
+                if ($existing && $before !== $variant->selling_price) {
+                    app(AuditService::class)->record($actor, 'CHANGE_VARIANT_PRICE', 'product_variant', $variant->id,
+                        ['selling_price' => $before], ['selling_price' => $variant->selling_price]);
+                }
 
                 return $variant;
             });

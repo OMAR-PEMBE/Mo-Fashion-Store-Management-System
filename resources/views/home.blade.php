@@ -1,22 +1,28 @@
 <x-layouts.app title="Overview">
-    <div class="mb-10">
-        <p class="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-info">Mo Fashion Store</p>
-        <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">A fresh start for your store.</h1>
-        <p class="mt-4 max-w-xl text-sm leading-7 text-text-secondary">A dedicated home for your daily operations, with everything in one place.</p>
-    </div>
-    <x-card class="overflow-hidden !p-0">
-        <div class="grid lg:grid-cols-[1.3fr_1fr]">
-            <div class="px-7 py-10 sm:p-12">
-                <x-badge>Welcome</x-badge>
-                <h2 class="mt-6 text-2xl font-bold tracking-tight">Your workspace is taking shape.</h2>
-                <p class="mt-4 max-w-lg text-sm leading-7 text-text-secondary">Store setup is in progress. Staff access and business tools will become available as setup is completed.</p>
-                <div class="mt-8 border-t border-border pt-6 text-sm"><span class="font-semibold">One store. One clear view.</span><p class="mt-2 text-text-secondary">Made for Mo Fashion Store.</p></div>
-            </div>
-            <div class="relative flex min-h-64 items-center justify-center overflow-hidden bg-selected p-12" aria-hidden="true">
-                <div class="absolute size-72 rounded-full border border-primary/25"></div>
-                <div class="absolute size-56 rounded-full border border-primary/40"></div>
-                <div class="relative flex size-36 rotate-[-8deg] items-center justify-center rounded-3xl bg-text-primary text-6xl font-bold text-primary shadow-lg">Mo</div>
-            </div>
+    <div class="mb-8 flex flex-wrap items-start justify-between gap-4"><div><p class="mb-2 text-sm text-text-secondary">Mo Fashion Store</p><h1 class="text-3xl font-bold">Store overview</h1><p class="mt-3 text-sm text-text-secondary">As of {{ $asOf->format('d M Y H:i:s T') }} · {{ $allSales ? 'Store sales' : 'Your sales' }}</p></div><a href="{{ route('dashboard') }}" class="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-semibold">Refresh overview</a></div>
+    @foreach(['today' => 'Today', 'month' => 'This month'] as $key => $heading)
+        @php($period = $periods[$key])
+        <section class="mb-8" aria-labelledby="{{ $key }}-heading"><h2 id="{{ $key }}-heading" class="mb-4 text-xl font-bold">{{ $heading }}</h2><div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            @if($period['sales_count'] !== null)<x-metric label="Completed sales" :value="$period['sales_count']" /><x-metric label="Gross sales revenue" :value="$period['sales_revenue']" money />@endif
+            @if($period['orders'] !== null)<x-metric label="Orders created" :value="$period['orders']" />@endif
+            @if($period['customers'] !== null)<x-metric label="New customer profiles" :value="$period['customers']" />@endif
+            @if($period['finance'])
+                @foreach(['net_sales' => 'Net sales revenue', 'cogs' => 'Adjusted COGS', 'gross_profit' => 'Gross profit', 'expenses' => 'Operating expenses', 'estimated_net_profit' => 'Estimated Net Profit'] as $field => $label)<x-metric :label="$label" :value="$period['finance'][$field]" money />@endforeach
+            @endif
         </div>
-    </x-card>
+        @if($period['finance'])<details class="mt-4 rounded-xl border border-border bg-surface p-5"><summary class="cursor-pointer text-sm font-semibold">How these figures are calculated</summary><dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+            @foreach(['gross_sales' => 'Completed sale revenue', 'exchange_payments' => 'Additional exchange payments', 'refunds' => 'Completed refunds (including exchanges)', 'sales_cogs' => 'Original sale costs', 'return_costs' => 'Sellable return cost reversals', 'replacement_costs' => 'Exchange replacement costs', 'exchange_return_costs' => 'Sellable exchange cost reversals'] as $field => $label)<div><dt>{{ $label }}</dt><dd class="mt-1 font-semibold">TZS {{ $period['finance'][$field] }}</dd></div>@endforeach
+        </dl><p class="mt-5 text-sm text-text-secondary">Net sales = completed sales + additional exchange payments − completed refunds. Adjusted COGS = original sale costs + replacement costs − sellable return and exchange cost reversals. Gross profit = net sales − adjusted COGS. Estimated Net Profit = gross profit − operating expenses.</p></details>@endif
+        </section>
+    @endforeach
+    @if($periods['today']['finance'])<p class="mb-8 text-sm leading-6 text-text-secondary">Refunds, returns and exchanges affect the period when completed; expenses use their expense date. Damaged, defective and other non-sellable returns retain their original cost. Pending transactions are excluded from financial figures. Delivery fees are outside Version 1 accounting.</p>@endif
+    @if($stock)<section class="mb-8" aria-labelledby="stock-heading"><h2 id="stock-heading" class="mb-4 text-xl font-bold">Stock availability</h2><p class="mb-4 text-sm text-text-secondary">Active, available catalogue variants. Available stock excludes reservations. Low stock excludes variants with zero available units.</p><div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">@foreach(['products' => 'Products with active variants', 'physical' => 'Physical units', 'reserved' => 'Reserved units', 'available' => 'Available units', 'low' => 'Low-stock variants', 'out' => 'Out-of-stock variants'] as $field => $label)<x-metric :label="$label" :value="$stock[$field]" />@endforeach</div></section>@endif
+    @if($periods['month']['sales_count'] !== null)<section class="mb-8"><h2 class="mb-4 text-xl font-bold">This month’s best sellers</h2><p class="mb-4 text-sm text-text-secondary">Ranked by units on original completed sales before returns. Replacement items are recorded separately in exchanges.</p><div class="grid gap-5 lg:grid-cols-2">
+        @foreach(['Products' => $topProducts, 'Variants' => $topVariants] as $title => $rows)<x-card :title="$title"><ol class="space-y-4">@forelse($rows as $row)<li class="flex justify-between gap-4 border-b border-border pb-3 text-sm"><span class="min-w-0 break-words">{{ $row->name ?? $row->sku }}</span><span class="shrink-0 font-semibold">{{ $row->units }} units</span></li>@empty<li class="text-sm text-text-secondary">No completed sales this month.</li>@endforelse</ol></x-card>@endforeach
+    </div></section>@endif
+    @if($topCustomers->isNotEmpty())<div class="mb-8"><x-card title="Highest-value customers this month"><p class="mb-4 text-sm text-text-secondary">Gross completed sale value before refunds and exchanges. Walk-ins are excluded.</p><ol class="space-y-4">@foreach($topCustomers as $customer)<li class="flex flex-wrap justify-between gap-3 border-b border-border pb-3 text-sm"><a href="{{ route('customers.show', $customer['id']) }}" class="break-words underline">{{ $customer['name'] }}</a><span class="font-semibold">TZS {{ $customer['revenue'] }}</span></li>@endforeach</ol></x-card></div>@endif
+    <div class="grid gap-5 lg:grid-cols-2">
+        @if($periods['today']['sales_count'] !== null)<x-card title="Recent completed sales"><ul class="space-y-4">@forelse($recentSales as $sale)<li class="flex flex-wrap justify-between gap-3 border-b border-border pb-3 text-sm"><a href="{{ route('sales.show', $sale) }}" class="underline">{{ $sale->sale_number }}</a><span>TZS {{ $sale->total_amount }}</span></li>@empty<li class="text-sm text-text-secondary">No completed sales yet.</li>@endforelse</ul></x-card>@endif
+        @if($periods['today']['orders'] !== null)<x-card title="Recent orders"><ul class="space-y-4">@forelse($recentOrders as $order)<li class="flex flex-wrap justify-between gap-3 border-b border-border pb-3 text-sm"><a href="{{ route('orders.show', $order) }}" class="underline">{{ $order->order_number }}</a><span>{{ str_replace('_', ' ', $order->status->value) }}</span></li>@empty<li class="text-sm text-text-secondary">No orders yet.</li>@endforelse</ul></x-card>@endif
+    </div>
 </x-layouts.app>

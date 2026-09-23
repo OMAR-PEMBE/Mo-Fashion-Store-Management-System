@@ -953,6 +953,9 @@ Expenses
 
 # 20. Phase 16 — Dashboard
 
+Implemented: scoped operational metrics, owner financial breakdowns, stock counts,
+rankings and recent activity. See `docs/PHASE_16.md` for policy and verification.
+
 ## Goal
 
 Give the owner useful operational visibility.
@@ -1001,6 +1004,9 @@ Salesperson dashboard shall exclude restricted financial data.
 ---
 
 # 21. Phase 17 — Reporting
+
+Implemented the nine planned reports, applicable filters, paginated results,
+source-document links and protected CSV downloads. See `docs/PHASE_17.md`.
 
 ## Goal
 
@@ -1057,6 +1063,10 @@ Compare to known manual sample calculations.
 ---
 
 # 22. Phase 18 — Users & Administration
+
+**Implemented:** staff creation/editing, activation, role assignment, permission
+management and temporary-password resets, with audited changes and session
+revocation. See [verification report](../docs/PHASE_18.md).
 
 ## Goal
 
@@ -2042,3 +2052,17 @@ TASK-PRD-007 Write product feature tests
 The architecture and development sequence are sufficiently defined to proceed into granular task planning.
 
 Payment, WhatsApp, AI, final hosting provider, and provider-specific integrations remain future phases and do not block Version 1 core development.
+
+## Phase 19 implementation status (2026-09-23)
+
+Audit list/detail and business settings are implemented. Settings, price changes,
+and manual stock adjustments create atomic audit records; existing transaction
+audit writers remain in use. Currency/timezone retain the established Version 1
+TZS / Africa/Dar_es_Salaam values. Completed-sale cancellation remains disabled
+pending its separate reversal policy. See [Phase 19 report](../docs/PHASE_19.md).
+
+## Phase 20 implementation status
+
+Application security headers and production configuration/HTTPS guards implemented.
+Verification and remaining deployment checks: [Phase 20](../docs/PHASE_20.md).
+Next: Phase 21 — Automated Testing & QA.

@@ -47,6 +47,7 @@ class LoginRequest extends FormRequest
         RateLimiter::clear($key);
         $this->session()->regenerate();
         $this->session()->put('password_hash_web', Auth::user()->getAuthPassword());
+        $this->session()->put('security_version', Auth::user()->security_version);
         Auth::user()->forceFill(['last_login_at' => now()])->save();
     }
 }

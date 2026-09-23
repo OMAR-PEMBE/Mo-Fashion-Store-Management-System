@@ -1670,13 +1670,15 @@ SUM(sale_items.line_cost)
 
 Adjustments from valid sellable returns must be handled correctly.
 
-A completed product return should reverse the corresponding item's COGS for the returned quantity.
+A completed sellable product return reverses the corresponding item's original
+COGS for the returned quantity. Owner-approved Phase 16 policy: damaged, defective
+and other non-sellable merchandise retains its original cost as a business cost.
 
 ---
 
 # 69. Return Cost Reversal
 
-For each returned quantity:
+For each completed sellable returned quantity:
 
 ```text
 returned_cogs =
@@ -1698,6 +1700,14 @@ sale_item.unit_cost
 ```
 
 from the original transaction.
+
+Phase 16 also adds completed exchange replacement line_cost and reverses only
+SELLABLE returned exchange line_cost. Monetary refunds do not independently
+reverse COGS. Net sales = completed sale revenue + completed exchange amount_due
+minus completed refunds; exchange refund_due is already represented by its linked
+refund and is not subtracted again. Adjustments belong to their completion period,
+not the original sale period. Expenses use expense_date. Historical sale costs and
+product WAC are never rewritten by dashboard queries.
 
 ---
 
@@ -3625,3 +3635,25 @@ Only successful sale conversion does so. See docs/PHASE_11.md.
 Core transactional schema is now defined for Version 1.
 
 Remaining policy-level `TBD`s such as return period, refund authorization, exact payment provider, and hosting configuration do not block core database implementation.
+
+## Phase 18 additive migration
+
+`2026_09_23_000015_add_staff_management_controls` adds unsigned `revision` and
+`security_version` to users (default 1), `must_change_password` (default false),
+and unsigned `revision` to roles (default 1). Existing foreign keys and financial
+records are unchanged. Revisions protect edits from stale forms; security versions
+revoke previously issued sessions. Administrator-created/reset passwords set the
+change flag. The down migration removes only these added columns.
+## Phase 19 administration
+
+The existing system_settings table now stores editable business_name,
+business_phone, business_address, low_stock_default and receipt_footer with
+updated_by. currency and timezone remain fixed at the established Version 1 values.
+Missing optional rows use application defaults until the first save. No arbitrary
+key editing is exposed. Existing variant thresholds and financial rows are unchanged.
+
+Migration 000016 adds audit created_at/action indexes and administrator permissions
+`audit.view` and `settings.manage` once. Seeder reruns preserve revocations.
+New audit actions: UPDATE_SETTINGS, CHANGE_PRODUCT_PRICE, CHANGE_VARIANT_PRICE,
+ADJUST_STOCK. These records commit/roll back with their source change; inventory
+operation retries do not duplicate them. Existing historical audits remain intact.

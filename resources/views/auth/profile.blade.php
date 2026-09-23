@@ -1,5 +1,6 @@
 <x-layouts.app title="Your profile">
     <h1 class="mb-6 text-3xl font-bold">Your profile</h1>
+    @if(auth()->user()->must_change_password)<p role="alert" class="mb-5 rounded-lg border border-warning bg-surface p-4 text-sm">Change your temporary password before using the workspace.</p>@endif
     <div class="max-w-xl space-y-6">
         <x-card title="Staff account">
             <dl class="space-y-3 text-sm">

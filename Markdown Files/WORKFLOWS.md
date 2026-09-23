@@ -1295,6 +1295,23 @@ Packaging
 
 # 54. Gross Profit Calculation Workflow
 
+Phase 17: Reports → Profit → select inclusive dates → Apply filters. The report
+and dashboard share FinancialSummaryService. Profit remains a whole-store period
+calculation; product/customer filters are not offered because store expenses must
+not be arbitrarily allocated. Reconciliation links open the corresponding sales,
+returns, refunds, exchanges and expenses reports for the same period. Transaction
+numbers open existing detail/history screens. CSV downloads preserve report filters.
+
+Phase 16 clarification, approved by the owner: only sellable returned goods
+reverse their original sale cost. Damaged, defective and other non-sellable returns
+retain that cost. Add completed exchange replacement costs and reverse sellable
+exchange original-item costs. Refunds reduce revenue but do not repeat stock/COGS
+changes. Exchange refund differences are counted through the linked refund once.
+
+The dashboard uses completed_at for sales/returns, processed_at for refunds and
+exchanges, and expense_date for expenses, in Africa/Dar_es_Salaam. A later-period
+refund can make that period's net revenue negative; historical sales stay intact.
+
 For reporting period:
 
 ```text
@@ -2063,3 +2080,41 @@ identify each operator. See docs/PHASE_11.md for verification and limitations.
 The core Version 1 operational workflows now align with the approved PRD, architecture, database, API, security, and UI specifications.
 
 Provider-specific WhatsApp/payment details remain `TBD` until their official integrations are selected.
+
+## Phase 18 — Staff & access
+
+Sign in as an administrator and open **Staff & access**. Add a staff member using
+their name, sign-in email, optional phone, role, status and a temporary password.
+Confirm with your own administrator password, then share the temporary password
+privately. The staff member must change it in Profile before opening the workspace.
+
+Use **Edit** to change account details or deactivate/reactivate access. Deactivation
+retains transaction and audit history. Email, role and status changes revoke old
+sessions. The separate **Reset staff password** form assigns a new temporary
+password and revokes sessions/reset links without activating an inactive account.
+Change your own password through Profile.
+
+Open **Role permissions** to change access for all members of an existing role.
+Staff administration and refund approval/completion remain administrator-only.
+You cannot remove all administrator access, deactivate yourself or change your own
+role. If another administrator changes a record first, reload its form and review
+the current values. All mutations require your current password and are audited.
+
+No automated credential email, custom-role creation or account deletion is included.
+See [Phase 18 report](../docs/PHASE_18.md) for verification and implementation details.
+## Phase 19 — Audit logs and business settings
+
+Administrators can open **Audit logs**, filter by staff member, action, record type,
+record ID or local date range, then select a date to inspect before/after values.
+This history is read-only. Older entries may contain fewer details.
+
+Open **Business settings** to change the store name, phone, address, receipt footer
+or default low-stock threshold. Confirm with your administrator password. The name
+appears throughout the signed-in workspace; contact details/footer appear on sale
+summaries. The threshold prefills new variant forms, leaving existing variants
+unchanged. Historical financial amounts remain unchanged. These are current store
+details, not immutable receipt-header snapshots.
+
+TZS currency and Africa/Dar_es_Salaam time retain their established Version 1 values.
+If another administrator saves first, reload and review the settings before retrying.
+Changes are audited. No payment/integration secrets are editable here.

@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExchangeController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\ExpenseController;
@@ -14,8 +16,11 @@ use App\Http\Controllers\ProductVariantController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\RefundController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\StaffController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -35,6 +40,22 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
+    Route::get('/audit-logs', [AuditController::class, 'index'])->middleware('can:audit.view')->name('audit.index');
+    Route::get('/audit-logs/{audit}', [AuditController::class, 'show'])->whereNumber('audit')->middleware('can:audit.view')->name('audit.show');
+    Route::get('/settings', [SettingsController::class, 'edit'])->middleware('can:settings.manage')->name('settings.edit');
+    Route::patch('/settings', [SettingsController::class, 'update'])->middleware(['can:settings.manage', 'throttle:20,1'])->name('settings.update');
+    Route::middleware(['can:users.manage', 'throttle:60,1'])->group(function () {
+        Route::resource('users', StaffController::class)->except(['show', 'destroy']);
+        Route::post('/users/{user}/password', [StaffController::class, 'password'])->name('users.password');
+        Route::get('/roles', [StaffController::class, 'roles'])->name('roles.index');
+        Route::get('/roles/{role}/permissions', [StaffController::class, 'editRole'])->name('roles.edit');
+        Route::put('/roles/{role}/permissions', [StaffController::class, 'updateRole'])->name('roles.update');
+    });
+    Route::middleware('can:reports.view')->group(function () {
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/{type}/export', [ReportController::class, 'export'])->middleware('throttle:10,1')->name('reports.export');
+        Route::get('/reports/{type}', [ReportController::class, 'show'])->name('reports.show');
+    });
     Route::middleware('can:expenses.view')->group(function () {
         Route::resource('expense-categories', ExpenseCategoryController::class)->except(['show', 'destroy'])->middleware('can:expense-categories.manage');
         Route::get('/expenses/create', [ExpenseController::class, 'create'])->middleware('can:expenses.create')->name('expenses.create');
@@ -108,7 +129,7 @@ Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
         Route::get('/{record}/edit', [ReferenceDataController::class, 'edit'])->whereNumber('record')->name('edit');
         Route::put('/{record}', [ReferenceDataController::class, 'update'])->whereNumber('record')->name('update');
     });
-    Route::view('/dashboard', 'home')->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/profile', function (Request $request) {
         Gate::authorize('view', $request->user());
 

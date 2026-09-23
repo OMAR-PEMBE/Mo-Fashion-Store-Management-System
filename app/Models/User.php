@@ -44,6 +44,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'revision' => 'integer', 'security_version' => 'integer', 'must_change_password' => 'boolean',
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
             'email_verified_at' => 'datetime',

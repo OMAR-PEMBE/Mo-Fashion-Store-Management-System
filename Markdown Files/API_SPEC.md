@@ -1584,6 +1584,12 @@ PATCH /api/v1/expense-categories/{id}
 
 # 73. Dashboard API
 
+Phase 16 implements GET /dashboard as a session-authenticated HTML route backed
+by DashboardService. It returns today/month-to-date metrics, stock availability,
+monthly rankings and recent activity according to the actor's permissions.
+The public dashboard API below remains future integration work. Financial values
+use decimal strings. No transaction or inventory data is changed by this route.
+
 ## GET /api/v1/dashboard
 
 Response example:
@@ -1621,6 +1627,28 @@ The business case expects the dashboard to expose sales, orders, customers, expe
 ---
 
 # 74. Reports API
+
+Phase 17 internal HTML routes are GET /reports, GET /reports/{type} and
+GET /reports/{type}/export. Types are sales, inventory, purchases, customers,
+expenses, profit, returns, refunds and exchanges. Public /api/v1 endpoints below
+remain future integration work. Internal dates are inclusive local date_from /
+date_to, defaulting to month-to-date, with no future end date. Inventory is a
+current snapshot and rejects date filters. Profit accepts dates only.
+
+Applicable UI filters use product (name/code), variant (SKU), customer
+(name/code/phone), supplier (name/code), category_id, salesperson_id, recorded_by,
+payment_method, status, size_id, colour_id, stock_status, purchase_count_min and
+spent_min. Inapplicable known filters are rejected. Status defaults to COMPLETED
+or CONFIRMED for purchases; an explicit blank selects all statuses. Product
+matching uses EXISTS so multi-line documents are not duplicated; displayed values
+remain full document totals. Results paginate at 25 rows.
+
+CSV exports apply the same validated filters, ignore page selection and include
+all matching rows up to 5,000. Larger requests are rejected with instructions to
+narrow filters. Downloads require fresh report/module permissions, are rate-limited,
+private/no-store and served directly without public files. Formula-prefix cells
+are neutralized, including leading whitespace/control characters. PDF and queued
+large exports remain optional future work.
 
 ## GET /api/v1/reports/sales
 
@@ -3154,3 +3182,43 @@ TBD
 ```
 
 until the relevant official provider documentation is selected and reviewed.
+
+## Phase 18 internal staff administration
+
+These session-authenticated Blade routes are implemented; they are not public
+`/api/v1` endpoints. All require an active Administrator with `users.manage`.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | /users | Paginated staff search, status and role filters |
+| GET / POST | /users/create / /users | Create staff with a temporary password |
+| GET / PUT | /users/{user}/edit / /users/{user} | Edit name, email, phone, role and active status |
+| POST | /users/{user}/password | Assign a temporary password to another account |
+| GET | /roles | Existing roles and membership counts |
+| GET / PUT | /roles/{role}/permissions | Read/update role permissions |
+
+Mutations require the acting administrator's `current_password`; updates and resets
+also require the current `revision`. Stale writes return 409, validation uses the
+normal session error bag, and unauthorized actions return 403. CSRF and throttling
+apply. No staff deletion or custom-role creation endpoint is provided.
+## Phase 19 internal administration routes
+
+Session-authenticated Blade routes, not public `/api/v1` endpoints:
+
+| Method | Route | Access |
+| --- | --- | --- |
+| GET | /audit-logs | Administrator + audit.view |
+| GET | /audit-logs/{id} | Administrator + audit.view |
+| GET | /settings | Administrator + settings.manage |
+| PATCH | /settings | Administrator + settings.manage |
+
+Audit filters: user_id, action, entity_type, entity_id, date_from and date_to.
+Dates are inclusive local dates; pages contain 30 entries, newest ID first.
+Detail values are escaped and sensitive field names redacted recursively.
+There are no audit edit/delete endpoints.
+
+Settings accept only business_name, business_phone, business_address, currency,
+timezone, low_stock_default and receipt_footer. Mutations require current_password
+and the revision hash supplied by GET; stale settings return 409. Currency accepts
+only TZS and timezone only Africa/Dar_es_Salaam. The threshold affects new-variant
+forms only. No arbitrary settings key or integration-secret API is exposed.

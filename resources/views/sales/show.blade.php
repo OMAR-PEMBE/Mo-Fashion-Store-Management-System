@@ -15,4 +15,4 @@
     <div class="mt-6"><x-action-link :href="route('exchanges.create', ['sale_number' => $sale->sale_number])">Start exchange</x-action-link></div><x-card title="Exchange history" class="mt-6"><ul class="space-y-3 text-sm">@forelse($sale->exchanges as $exchange)<li><a class="underline" href="{{ route('exchanges.show', $exchange) }}">{{ $exchange->exchange_number }}</a> · {{ $exchange->status->value }}</li>@empty<li>No exchanges recorded.</li>@endforelse</ul></x-card>
     @endcan
     <a href="{{ route('sales.index') }}" class="mt-6 inline-block text-sm underline">Back to sales history</a>
-</x-layouts.app>
+<div class="mt-6 whitespace-pre-line break-words rounded-xl border border-border bg-surface p-5 text-sm"><p class="font-semibold">{{ $business['business_name'] }}</p><p>{{ $business['business_phone'] }}</p><p>{{ $business['business_address'] }}</p><p class="mt-3">{{ $business['receipt_footer'] }}</p></div></x-layouts.app>

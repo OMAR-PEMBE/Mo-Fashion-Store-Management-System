@@ -1,0 +1,6 @@
+<x-layouts.app title="Audit detail">
+    <a href="{{ route('audit.index') }}" class="text-sm underline">Audit logs</a><h1 class="mb-6 mt-2 text-3xl font-bold">Audit record #{{ $entry->id }}</h1>
+    <x-card><dl class="grid gap-5 text-sm sm:grid-cols-2">@foreach(['Action' => $entry->action, 'Date' => $entry->created_at, 'Staff member' => $entry->actor_name ?? 'System / unavailable', 'Record type' => $entry->entity_type, 'Record ID' => $entry->entity_id ?? 'Not applicable', 'IP address' => $entry->ip_address ?? 'Not recorded'] as $label => $value)<div class="min-w-0"><dt class="text-text-secondary">{{ $label }}</dt><dd class="mt-1 break-words">{{ $value }}</dd></div>@endforeach</dl></x-card>
+    <div class="mt-6 grid gap-6 lg:grid-cols-2">@foreach(['old_values' => 'Before', 'new_values' => 'After'] as $field => $label)<div class="min-w-0"><x-card :title="$label"><pre class="whitespace-pre-wrap break-all text-xs leading-6">{{ $values[$field] }}</pre></x-card></div>@endforeach</div>
+    <p class="mt-5 text-sm text-text-secondary">Audit records cannot be edited or deleted here. Older entries may not contain every field.</p>
+</x-layouts.app>

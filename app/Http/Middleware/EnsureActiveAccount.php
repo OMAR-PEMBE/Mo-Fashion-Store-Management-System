@@ -11,7 +11,12 @@ class EnsureActiveAccount
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()?->canAccessWorkspace()) {
+        $fresh = $request->user()?->fresh();
+        if ($fresh) {
+            Auth::setUser($fresh);
+        }
+        $version = $request->session()->get('security_version', 1);
+        if (! $fresh?->canAccessWorkspace() || (int) $version !== $fresh->security_version) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -21,6 +26,10 @@ class EnsureActiveAccount
             }
 
             return redirect()->route('login')->withErrors(['email' => 'Please sign in with an active staff account.']);
+        }
+
+        if ($fresh->must_change_password && ! $request->routeIs('profile', 'password.update')) {
+            return redirect()->route('profile')->with('status', 'Change your temporary password before using the workspace.');
         }
 
         $response = $next($request);

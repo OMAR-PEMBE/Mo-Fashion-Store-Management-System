@@ -422,6 +422,11 @@ Operational expenses shall be deducted separately when calculating net profit.
 
 # Dashboard Profit Information
 
+Approved during Phase 16: damaged or defective returned merchandise that cannot
+be resold retains its original cost when estimating profit. Sellable completed
+returns reverse original historical cost. Refund/exchange adjustments are recorded
+in their completion period and must not be counted twice.
+
 The owner dashboard should display:
 
 ### Today

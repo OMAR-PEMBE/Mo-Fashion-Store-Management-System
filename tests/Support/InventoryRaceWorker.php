@@ -50,7 +50,7 @@ while (! file_exists($resolved.'/go')) {
 try {
     $variant = ProductVariant::findOrFail($variantId);
     $actor = User::findOrFail($actorId);
-    $context = new InventoryContext($actor, $key, 'concurrency_test', 1);
+    $context = new InventoryContext($actor, $key, 'concurrency_test', 1, $mode === 'adjust' ? 'Concurrent count correction' : null);
     $service = app(InventoryService::class);
     file_put_contents($resolved.'/'.$worker.'.attempting', 'attempting');
     if ($mode === 'exchangecomplete') {
@@ -98,6 +98,7 @@ try {
         exit(0);
     }
     $movement = match ($mode) {
+        'adjust' => $service->adjust($variant, (int) $quantity, $context),
         'increase' => $service->increase($variant, (int) $quantity, InventoryMovementType::Purchase, $context),
         'decrease' => $service->decrease($variant, (int) $quantity, InventoryMovementType::Sale, $context),
         'reserve' => $service->reserve($variant, (int) $quantity, $context),

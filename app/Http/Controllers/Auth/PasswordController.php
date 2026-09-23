@@ -7,10 +7,14 @@ use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
+use Illuminate\Validation\ValidationException;
 
 class PasswordController extends Controller
 {
@@ -32,7 +36,13 @@ class PasswordController extends Controller
         ]);
         $data['email'] = Str::lower($data['email']);
         $status = Password::reset($data + ['is_active' => true, fn ($query) => $query->whereHas('role')], function (User $user, string $password) {
-            $user->forceFill(['password' => $password, 'remember_token' => Str::random(60)])->save();
+            DB::transaction(function () use ($user, $password) {
+                $fresh = User::lockForUpdate()->findOrFail($user->id);
+                if (! $fresh->canAccessWorkspace() || $fresh->security_version !== $user->security_version || $fresh->email !== $user->email) {
+                    throw ValidationException::withMessages(['email' => 'This account changed. Request a new password reset link.']);
+                }
+                $fresh->forceFill(['password' => $password, 'remember_token' => Str::random(60), 'must_change_password' => false, 'revision' => $fresh->revision + 1])->save();
+            });
             event(new PasswordReset($user));
         });
 
@@ -50,9 +60,19 @@ class PasswordController extends Controller
             'current_password' => ['required', 'current_password:web'],
             'password' => ['required', 'confirmed', 'different:current_password', 'max:255', PasswordRule::defaults()],
         ]);
-        $request->user()->forceFill(['password' => $data['password'], 'remember_token' => Str::random(60)])->save();
+        $user = DB::transaction(function () use ($request, $data) {
+            $user = User::lockForUpdate()->findOrFail($request->user()->id);
+            abort_unless($user->canAccessWorkspace() && $user->security_version === $request->user()->security_version, 403);
+            if (! Hash::check($data['current_password'], $user->password)) {
+                throw ValidationException::withMessages(['current_password' => 'Your password changed. Sign in again.']);
+            }
+            $user->forceFill(['password' => $data['password'], 'remember_token' => Str::random(60), 'must_change_password' => false, 'revision' => $user->revision + 1])->save();
+
+            return $user;
+        });
         // Keep this session; auth.session rejects old password hashes on other devices.
-        $request->session()->put('password_hash_web', $request->user()->getAuthPassword());
+        Auth::setUser($user);
+        $request->session()->put('password_hash_web', $user->getAuthPassword());
         $request->session()->regenerate();
 
         return back()->with('status', 'Password updated. Other sessions will require a new sign-in.');
