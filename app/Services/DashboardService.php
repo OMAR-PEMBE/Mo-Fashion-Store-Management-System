@@ -55,17 +55,21 @@ class DashboardService
             $products = collect();
             $variants = collect();
             if ($permissions['sales.create']) {
-                $lines = DB::table('sale_items')->join('product_variants', 'product_variants.id', '=', 'sale_items.product_variant_id')
-                    ->join('products', 'products.id', '=', 'product_variants.product_id')->whereIn('sale_items.sale_id', (clone $monthSales)->select('sales.id'));
-                $products = (clone $lines)->select('products.id', 'products.name')->selectRaw('SUM(sale_items.quantity) AS units')
+                // Aggregate narrow transaction rows before joining descriptive catalogue data.
+                $units = DB::table('sale_items')->whereIn('sale_id', (clone $monthSales)->select('sales.id'))
+                    ->select('product_variant_id')->selectRaw('SUM(quantity) AS units')->groupBy('product_variant_id');
+                $lines = DB::query()->fromSub($units, 'sold')->join('product_variants', 'product_variants.id', '=', 'sold.product_variant_id')
+                    ->join('products', 'products.id', '=', 'product_variants.product_id');
+                $products = (clone $lines)->select('products.id', 'products.name')->selectRaw('SUM(sold.units) AS units')
                     ->groupBy('products.id', 'products.name')->orderByDesc('units')->orderBy('products.id')->limit(5)->get();
-                $variants = (clone $lines)->select('product_variants.id', 'product_variants.sku')->selectRaw('SUM(sale_items.quantity) AS units')
-                    ->groupBy('product_variants.id', 'product_variants.sku')->orderByDesc('units')->orderBy('product_variants.id')->limit(5)->get();
+                $variants = (clone $lines)->select('product_variants.id', 'product_variants.sku', 'sold.units')
+                    ->orderByDesc('units')->orderBy('product_variants.id')->limit(5)->get();
             }
             $customers = collect();
             if ($finance && $permissions['customers.manage'] && $permissions['customers.create']) {
-                $customers = DB::table('sales')->join('customers', 'customers.id', '=', 'sales.customer_id')->whereIn('sales.id', (clone $monthSales)->select('sales.id'))
-                    ->select('customers.id', 'customers.full_name')->selectRaw('SUM(sales.total_amount) AS revenue')->groupBy('customers.id', 'customers.full_name')
+                $spending = (clone $monthSales)->whereNotNull('customer_id')->select('customer_id')->selectRaw('SUM(total_amount) AS revenue')->groupBy('customer_id');
+                $customers = DB::query()->fromSub($spending, 'spending')->join('customers', 'customers.id', '=', 'spending.customer_id')
+                    ->select('customers.id', 'customers.full_name', 'spending.revenue')
                     ->orderByDesc('revenue')->orderBy('customers.id')->limit(5)->get()->map(fn ($row) => ['id' => $row->id, 'name' => $row->full_name, 'revenue' => $this->money($row->revenue)]);
             }
 

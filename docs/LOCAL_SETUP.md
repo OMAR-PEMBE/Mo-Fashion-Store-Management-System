@@ -549,3 +549,26 @@ must use the configured host and port.
 The deployment must separately verify TLS/proxy configuration, public-only web
 root, private database access, log permissions, mail delivery and backup restore.
 See [Phase 20 report](PHASE_20.md) for coverage and limits.
+## Phase 21 — Repeatable QA
+
+From a development checkout, run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\qa.ps1
+```
+
+The execution-policy setting applies only to that process; it does not change
+Windows policy. The runner uses the bundled PHP/Node when available, or accepts
+-PhpPath and -NodeDirectory. It stops on failed formatting, unit/feature tests,
+MySQL tests, asset compilation, Blade/route checks or Git whitespace checks.
+-SkipMySql explicitly produces an incomplete QA run.
+
+The runner refuses cached configuration. After confirming the checkout is local,
+clear it with artisan config:clear. The test base also checks the resolved connection
+before database fixture setup: only testing + SQLite :memory: or MySQL
+mfbms_testing is allowed. Configure .env.testing locally and never reuse the real
+business schema. The scale test temporarily inserts 50,000 sales and 100,000 lines
+in the test database, then rolls the transaction back.
+
+The automated runner does not claim browser/UAT/production verification. See
+[QA coverage](QA_MATRIX.md) and [Phase 21](PHASE_21.md) for the recorded review.

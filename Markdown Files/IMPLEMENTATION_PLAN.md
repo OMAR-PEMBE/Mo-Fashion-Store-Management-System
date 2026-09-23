@@ -2066,3 +2066,13 @@ pending its separate reversal policy. See [Phase 19 report](../docs/PHASE_19.md)
 Application security headers and production configuration/HTTPS guards implemented.
 Verification and remaining deployment checks: [Phase 20](../docs/PHASE_20.md).
 Next: Phase 21 — Automated Testing & QA.
+
+
+## Phase 21 verification
+
+Repeatable QA runner, isolated arithmetic tests, test database guard and large-data
+report regression added. Dashboard ranking queries aggregate before descriptive
+joins. See [Phase 21 report](../docs/PHASE_21.md) and [coverage matrix](../docs/QA_MATRIX.md).
+
+Final Phase 21 result: 224 unit/application tests and 35 MySQL tests passed;
+browser checks and the full QA runner passed. Next: Phase 22 owner/staff UAT.

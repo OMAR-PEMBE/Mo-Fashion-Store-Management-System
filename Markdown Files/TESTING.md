@@ -2377,3 +2377,10 @@ to break each implementation phase into concrete coding tasks for Codex or the d
 The core MFBMS Version 1 business, security, API, inventory, financial, workflow, UI, and integration testing requirements are now defined.
 
 Payment-provider-specific and WhatsApp-provider-specific tests shall be finalized when those integrations are selected.
+
+## Phase 21 executable QA baseline
+
+Use [scripts/qa.ps1](../scripts/qa.ps1) for formatting, application/MySQL suites,
+assets, Blade/routes and whitespace verification. The test base refuses non-test
+databases before fixture setup. [QA matrix](../docs/QA_MATRIX.md) maps the approved
+workflow coverage and explicitly lists unimplemented/future scope.

@@ -105,3 +105,6 @@ See [Phase 19 verification](docs/PHASE_19.md).
 
 Production application checks: `php artisan app:check-security`.
 See [Phase 20 security review](docs/PHASE_20.md); local development is expected to fail production checks.
+
+Repeatable local QA: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\qa.ps1`.
+See [QA coverage](docs/QA_MATRIX.md) and [Phase 21](docs/PHASE_21.md).

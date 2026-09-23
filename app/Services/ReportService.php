@@ -197,14 +197,15 @@ class ReportService
             $foreign = match ($type) {
                 'sales' => 'sale_id', 'purchases' => 'purchase_id', 'returns' => 'return_id', 'refunds' => 'refund_id', 'exchanges' => 'exchange_id'
             };
-            $query->whereExists(function ($q) use ($table, $foreign, $type, $filters) {
-                $q->selectRaw('1')->from($table.' as l')->whereColumn('l.'.$foreign, 'd.id');
-                if ($type === 'refunds') {
-                    $q->join('sale_items as si', 'si.id', '=', 'l.sale_item_id');
-                }
-                $q->join('product_variants as v', 'v.id', '=', ($type === 'refunds' ? 'si' : 'l').'.product_variant_id')->join('products as p', 'p.id', '=', 'v.product_id');
-                $this->productFilters($q, $filters);
-            });
+            // Materialize unique matching document IDs once; do not repeatedly
+            // evaluate catalogue joins for every candidate transaction.
+            $matching = DB::table($table.' as l')->select('l.'.$foreign.' as document_id')->distinct();
+            if ($type === 'refunds') {
+                $matching->join('sale_items as si', 'si.id', '=', 'l.sale_item_id');
+            }
+            $matching->join('product_variants as v', 'v.id', '=', ($type === 'refunds' ? 'si' : 'l').'.product_variant_id')->join('products as p', 'p.id', '=', 'v.product_id');
+            $this->productFilters($matching, $filters);
+            $query->joinSub($matching, 'matching_documents', 'matching_documents.document_id', '=', 'd.id');
         }
 
         return $query->orderByDesc(DB::raw($date))->orderByDesc('d.id');
