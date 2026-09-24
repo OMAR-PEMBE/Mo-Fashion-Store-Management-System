@@ -10,6 +10,7 @@ use App\Models\Size;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -22,6 +23,7 @@ class ProductCatalogueService
 
     public function saveProduct(array $input, User $actor, ?Product $product = null): Product
     {
+        $this->authorizeAdministrator($actor, $product ? 'products.update' : 'products.create');
         $input = $this->normalize($input, 'product_code');
         try {
             return DB::transaction(function () use ($input, $actor, $product) {
@@ -59,13 +61,16 @@ class ProductCatalogueService
 
     public function saveVariant(Product $product, array $input, ?ProductVariant $variant = null, ?User $actor = null): ProductVariant
     {
+        if ($variant || $actor) {
+            $this->authorizeAdministrator($actor, 'products.update');
+        }
         $input = $this->normalize($input, 'sku');
         try {
             return DB::transaction(function () use ($product, $input, $variant, $actor) {
                 $product = Product::lockForUpdate()->findOrFail($product->id);
                 $variant = $variant ? $product->variants()->lockForUpdate()->findOrFail($variant->id) : new ProductVariant;
                 $data = Validator::make($input, [
-                    'sku' => ['required', 'string', 'max:150', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/', Rule::unique('product_variants')->ignore($variant->id)],
+                    'sku' => ['nullable', 'string', 'max:150', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/', Rule::unique('product_variants')->ignore($variant->id)],
                     'size_id' => ['nullable', 'integer', 'exists:sizes,id'],
                     'colour_id' => ['nullable', 'integer', 'exists:colours,id'],
                     'selling_price' => ['required', 'regex:'.self::PRICE_PATTERN],
@@ -75,6 +80,7 @@ class ProductCatalogueService
                 if ((! $variant->exists || $data['is_active']) && (! $product->is_active || ! $product->category->is_active || $product->category->trashed())) {
                     throw ValidationException::withMessages(['sku' => 'Activate the product and its category before adding or activating variants.']);
                 }
+                $codes = [];
                 foreach (['size_id' => Size::class, 'colour_id' => Colour::class] as $field => $model) {
                     $data[$field] ??= null;
                     if ($data[$field] !== null) {
@@ -82,15 +88,23 @@ class ProductCatalogueService
                         if (! $reference || (! $reference->is_active && ($data['is_active'] || $reference->id != $variant->$field || ! $variant->exists))) {
                             throw ValidationException::withMessages([$field => 'Choose an active '.($field === 'size_id' ? 'size' : 'colour').'.']);
                         }
+                        $codes[$field] = $reference->code;
                     }
                 }
-                if ($variant->exists && ($variant->size_id != $data['size_id'] || $variant->colour_id != $data['colour_id']) && $variant->movements()->lockForUpdate()->first(['id'])) {
-                    throw ValidationException::withMessages(['size_id' => 'Size and colour cannot change after inventory activity. Create a separate variant.']);
+                $attributesChanged = $variant->exists && ($variant->size_id != $data['size_id'] || $variant->colour_id != $data['colour_id']);
+                $correctionReason = null;
+                $oldAttributes = $variant->only(['size_id', 'colour_id', 'sku']);
+                if ($attributesChanged) {
+                    $correctionReason = $this->validateAttributeCorrection($variant, $input);
                 }
                 $duplicate = $product->variants()->withTrashed()->where('size_id', $data['size_id'])->where('colour_id', $data['colour_id'])
                     ->when($variant->exists, fn ($query) => $query->where('id', '!=', $variant->id))->exists();
                 if ($duplicate) {
                     throw ValidationException::withMessages(['size_id' => 'This size/colour combination already exists. Edit or restore the existing variant.']);
+                }
+                if (! isset($data['sku']) || $data['sku'] === '') {
+                    // Keep existing identifiers stable when editing a variant.
+                    $data['sku'] = $variant->exists ? $variant->sku : $this->generateSku($product, $codes);
                 }
                 $before = $variant->exists ? $variant->selling_price : null;
                 $existing = $variant->exists;
@@ -98,6 +112,10 @@ class ProductCatalogueService
                 $variant->product()->associate($product);
                 $variant->save();
                 app(InventoryService::class)->initialize($variant);
+                if ($attributesChanged) {
+                    app(AuditService::class)->record($actor, 'CORRECT_VARIANT_ATTRIBUTES', 'product_variant', $variant->id,
+                        $oldAttributes, $variant->only(['size_id', 'colour_id', 'sku']) + ['reason' => $correctionReason]);
+                }
                 if ($existing && $before !== $variant->selling_price) {
                     app(AuditService::class)->record($actor, 'CHANGE_VARIANT_PRICE', 'product_variant', $variant->id,
                         ['selling_price' => $before], ['selling_price' => $variant->selling_price]);
@@ -147,5 +165,53 @@ class ProductCatalogueService
         }
 
         return $input;
+    }
+
+    private function generateSku(Product $product, array $codes): string
+    {
+        $parts = array_filter([$product->product_code, $codes['colour_id'] ?? null, $codes['size_id'] ?? null], fn ($part) => $part !== null);
+        if (strlen(implode('-', $parts)) > 140) {
+            // Leave room for every attribute and a collision suffix.
+            foreach ([60, 40, 38] as $index => $limit) {
+                if (isset($parts[$index])) {
+                    $parts[$index] = rtrim(substr($parts[$index], 0, $limit), '-_');
+                }
+            }
+        }
+        $base = implode('-', $parts);
+        $sku = $base;
+        $suffix = 2;
+        // Archived SKUs remain reserved. The unique database index also protects
+        // against another product claiming the same SKU concurrently.
+        while (ProductVariant::withTrashed()->where('sku', $sku)->exists()) {
+            $sku = $base.'-'.$suffix++;
+        }
+
+        return $sku;
+    }
+
+    private function authorizeAdministrator(?User $actor, string $permission): void
+    {
+        $actor = $actor?->fresh();
+        abort_unless($actor?->canAccessWorkspace() && ! $actor->must_change_password && $actor->role()->where('slug', 'administrator')->exists(), 403);
+        Gate::forUser($actor)->authorize($permission);
+    }
+
+    private function validateAttributeCorrection(ProductVariant $variant, array $input): ?string
+    {
+        // Used variants remain editable by administrators, with a recorded reason.
+        $hasHistory = (bool) $variant->movements()->lockForUpdate()->first(['id']);
+        foreach (['sale_items', 'order_items', 'exchange_items'] as $table) {
+            if (DB::table($table)->where('product_variant_id', $variant->id)->lockForUpdate()->first(['id'])) {
+                $hasHistory = true;
+            }
+        }
+        if (! $hasHistory) {
+            return null;
+        }
+
+        return Validator::make(['correction_reason' => is_string($input['correction_reason'] ?? null) ? trim($input['correction_reason']) : ($input['correction_reason'] ?? null)], [
+            'correction_reason' => ['required', 'string', 'max:255'],
+        ])->validate()['correction_reason'];
     }
 }

@@ -12,6 +12,7 @@ class ReferenceDataSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(ColourSeeder::class);
         DB::transaction(function () {
             foreach (['XS', 'S', 'M', 'L', 'XL', 'XXL'] as $order => $code) {
                 Size::firstOrCreate(['code' => $code], ['name' => $code, 'sort_order' => $order + 1, 'is_active' => true]);

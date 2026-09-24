@@ -237,12 +237,12 @@ class InventoryTest extends TestCase
         $this->service->reserve($this->variant, 1, $this->context('new-reservation'));
     }
 
-    public function test_inventory_history_prevents_changing_variant_dimensions(): void
+    public function test_purchase_stock_requires_a_reason_before_correcting_variant_dimensions(): void
     {
         $this->service->increase($this->variant, 1, Type::Purchase, $this->context('stock'));
         $size = Size::where('code', 'M')->firstOrFail();
         $this->actingAs($this->admin)->put('/products/'.$this->variant->product_id.'/variants/'.$this->variant->id,
-            ['sku' => 'TEST-SKU', 'size_id' => $size->id, 'selling_price' => '100', 'low_stock_threshold' => 2, 'is_active' => 1])->assertSessionHasErrors('size_id');
+            ['sku' => 'TEST-SKU', 'size_id' => $size->id, 'selling_price' => '100', 'low_stock_threshold' => 2, 'is_active' => 1])->assertSessionHasErrors('correction_reason');
         $this->assertNull($this->variant->fresh()->size_id);
         $this->balance(1, 0);
     }

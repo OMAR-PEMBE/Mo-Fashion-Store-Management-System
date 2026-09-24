@@ -2,17 +2,30 @@
 
 namespace Tests\Feature;
 
+use App\Enums\InventoryMovementType;
 use App\Models\Category;
 use App\Models\Colour;
+use App\Models\Permission;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Role;
 use App\Models\Size;
+use App\Models\Supplier;
 use App\Models\User;
+use App\Services\AuditService;
+use App\Services\CustomerService;
+use App\Services\InventoryService;
+use App\Services\OpeningStockService;
+use App\Services\OrderService;
 use App\Services\ProductCatalogueService;
+use App\Services\PurchaseService;
+use App\Services\SaleService;
+use App\Support\InventoryContext;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class ProductCatalogueTest extends TestCase
@@ -34,7 +47,7 @@ class ProductCatalogueTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $this->admin = User::factory()->create(['role_id' => Role::where('slug', 'administrator')->value('id')]);
         $this->category = Category::create(['name' => 'Jeans', 'slug' => 'jeans']);
-        $this->colour = Colour::create(['name' => 'Blue', 'code' => 'BLUE']);
+        $this->colour = Colour::where('code', 'BLUE')->firstOrFail();
         $this->size = Size::where('code', 'M')->firstOrFail();
         $this->actingAs($this->admin);
     }
@@ -104,6 +117,57 @@ class ProductCatalogueTest extends TestCase
     public static function combinations(): array
     {
         return ['size and colour' => [true, true], 'size only' => [true, false], 'colour only' => [false, true], 'neither' => [false, false]];
+    }
+
+    #[DataProvider('combinations')]
+    public function test_blank_sku_is_generated_from_available_attributes(bool $size, bool $colour): void
+    {
+        $product = $this->product();
+        $this->get('/products/'.$product->id.'/variants/create')->assertOk()
+            ->assertSee('Blue')->assertSee('Manage colours')->assertSee('Generated when you save');
+        $data = $this->variantData(['sku' => ' ', 'size_id' => $size ? $this->size->id : null, 'colour_id' => $colour ? $this->colour->id : null]);
+        $this->post('/products/'.$product->id.'/variants', $data)->assertSessionHasNoErrors();
+        $variant = ProductVariant::firstOrFail();
+        $expected = 'JEANS-001'.($colour ? '-BLUE' : '').($size ? '-M' : '');
+        $this->assertSame($expected, $variant->sku);
+        $this->assertDatabaseHas('inventories', ['product_variant_id' => $variant->id, 'physical_quantity' => 0]);
+        $this->put('/products/'.$product->id.'/variants/'.$variant->id, array_replace($data, ['selling_price' => '49000']))->assertSessionHasNoErrors();
+        $this->assertSame($expected, $variant->fresh()->sku);
+    }
+
+    public function test_generated_sku_skips_archived_collisions_and_accepts_omitted_sku(): void
+    {
+        $service = app(ProductCatalogueService::class);
+        $other = $this->product(['product_code' => 'OTHER']);
+        $reserved = $service->saveVariant($other, $this->variantData(['sku' => 'JEANS-001-BLUE-M']));
+        $service->archive($other, $reserved);
+        $product = $this->product();
+        $data = $this->variantData();
+        unset($data['sku']);
+        $this->post('/products/'.$product->id.'/variants', $data)->assertSessionHasNoErrors();
+        $this->assertSame('JEANS-001-BLUE-M-2', $product->variants()->firstOrFail()->sku);
+        $this->post('/products/'.$product->id.'/variants', $data)->assertSessionHasErrors('size_id');
+        $this->assertSame(1, $product->variants()->count());
+    }
+
+    public function test_generated_sku_fits_column_and_empty_colour_list_has_help(): void
+    {
+        $product = $this->product(['product_code' => str_repeat('P', 100)]);
+        $this->colour->update(['code' => str_repeat('C', 100)]);
+        $this->post('/products/'.$product->id.'/variants', $this->variantData(['sku' => null]))->assertSessionHasNoErrors();
+        $sku = $product->variants()->firstOrFail()->sku;
+        $this->assertLessThanOrEqual(150, strlen($sku));
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/', $sku);
+        $this->assertStringEndsWith('-M', $sku);
+        Colour::query()->update(['is_active' => false]);
+        $this->get('/products/'.$product->id.'/variants/create')->assertOk()->assertSee('No active colours are available');
+    }
+
+    public function test_zero_code_is_not_omitted_from_generated_sku(): void
+    {
+        $product = $this->product(['product_code' => '0']);
+        $this->post('/products/'.$product->id.'/variants', $this->variantData(['sku' => null, 'size_id' => null, 'colour_id' => null]))->assertSessionHasNoErrors();
+        $this->assertSame('0', $product->variants()->firstOrFail()->sku);
     }
 
     #[DataProvider('combinations')]
@@ -249,5 +313,125 @@ class ProductCatalogueTest extends TestCase
     {
         $this->app['env'] = 'local';
         $this->post('/products', $this->productData())->assertStatus(419);
+    }
+
+    public static function correctionStockSources(): array
+    {
+        return [['opening'], ['purchase']];
+    }
+
+    #[DataProvider('correctionStockSources')]
+    public function test_unsold_stock_attributes_can_be_corrected_with_reason_and_atomic_audit(string $source): void
+    {
+        $product = $this->product();
+        $variant = app(ProductCatalogueService::class)->saveVariant($product, $this->variantData());
+        if ($source === 'opening') {
+            app(OpeningStockService::class)->confirm($variant, ['quantity' => 10, 'unit_cost' => '20000'], $this->admin);
+        } else {
+            $supplier = Supplier::create(['name' => 'Correction supplier', 'supplier_code' => 'CORRECTION']);
+            $purchaseService = app(PurchaseService::class);
+            $purchase = $purchaseService->createDraft(['supplier_id' => $supplier->id, 'purchase_date' => now()->toDateString(), 'payment_status' => 'PAID',
+                'items' => [['product_variant_id' => $variant->id, 'quantity' => 10, 'unit_cost' => '20000']]], $this->admin);
+            $purchaseService->confirm($purchase, $this->admin, 1);
+        }
+        $large = Size::where('code', 'L')->firstOrFail();
+        $data = $this->variantData(['size_id' => $large->id, 'colour_id' => Colour::where('code', 'BLACK')->value('id')]);
+        $url = '/products/'.$product->id.'/variants/'.$variant->id;
+        $ledger = DB::table('inventory_movements')->get()->toJson();
+        $this->put($url, $data)->assertSessionHasErrors('correction_reason');
+        $this->assertSame($this->size->id, $variant->fresh()->size_id);
+        $this->put($url, $data + ['correction_reason' => 'Wrong size and colour during setup'])->assertSessionHasNoErrors();
+        $this->assertSame($large->id, $variant->fresh()->size_id);
+        $this->assertSame($data['colour_id'], $variant->fresh()->colour_id);
+        $this->assertSame('20000.00', $variant->fresh()->weighted_average_cost);
+        $this->assertSame(10, $variant->inventory->physical_quantity);
+        $this->assertSame('JEANS-BLUE-M', $variant->fresh()->sku);
+        $this->assertSame($ledger, DB::table('inventory_movements')->get()->toJson());
+        $audit = DB::table('audit_logs')->where('action', 'CORRECT_VARIANT_ATTRIBUTES')->first();
+        $this->assertSame($this->admin->id, $audit->user_id);
+        $this->assertSame($this->size->id, json_decode($audit->old_values, true)['size_id']);
+        $this->assertSame('Wrong size and colour during setup', json_decode($audit->new_values, true)['reason']);
+    }
+
+    public static function usedVariantActivities(): array
+    {
+        return [['sale'], ['order'], ['reservation'], ['damage']];
+    }
+
+    #[DataProvider('usedVariantActivities')]
+    public function test_administrator_can_correct_used_variant_without_rewriting_transactions(string $activity): void
+    {
+        $product = $this->product();
+        $variant = app(ProductCatalogueService::class)->saveVariant($product, $this->variantData());
+        app(OpeningStockService::class)->confirm($variant, ['quantity' => 10, 'unit_cost' => '20000'], $this->admin);
+        $items = [['product_variant_id' => $variant->id, 'quantity' => 1, 'unit_price' => '45000']];
+        if ($activity === 'sale') {
+            app(SaleService::class)->completeSale(['request_key' => 'correction:sale', 'payment_method' => 'CASH', 'items' => $items], $this->admin);
+        } elseif ($activity === 'order') {
+            $customer = app(CustomerService::class)->save(['full_name' => 'Correction test'], $this->admin);
+            app(OrderService::class)->create(['request_key' => 'correction:order', 'customer_id' => $customer->id, 'items' => $items], $this->admin);
+        } elseif ($activity === 'reservation') {
+            app(InventoryService::class)->reserve($variant, 1, new InventoryContext($this->admin, 'correction:reserve', 'order', 1));
+        } else {
+            app(InventoryService::class)->decrease($variant, 1, InventoryMovementType::Damage, new InventoryContext($this->admin, 'correction:damage', 'damage', 1, 'Damaged stock'));
+        }
+        $history = [];
+        foreach (['sale_items', 'sales', 'order_items', 'orders', 'inventory_movements', 'inventories'] as $table) {
+            $history[$table] = DB::table($table)->get()->toJson();
+        }
+        $this->put('/products/'.$product->id.'/variants/'.$variant->id, $this->variantData([
+            'size_id' => Size::where('code', 'L')->value('id'), 'correction_reason' => 'Setup mistake',
+        ]))->assertSessionHasNoErrors();
+        $this->assertSame(Size::where('code', 'L')->value('id'), $variant->fresh()->size_id);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'CORRECT_VARIANT_ATTRIBUTES', 'user_id' => $this->admin->id]);
+        foreach ($history as $table => $before) {
+            $this->assertSame($before, DB::table($table)->get()->toJson(), $table.' must remain unchanged');
+        }
+    }
+
+    public function test_stock_correction_requires_product_permission_and_rolls_back_on_audit_failure(): void
+    {
+        $product = $this->product();
+        $variant = app(ProductCatalogueService::class)->saveVariant($product, $this->variantData());
+        app(OpeningStockService::class)->confirm($variant, ['quantity' => 10, 'unit_cost' => '20000'], $this->admin);
+        $data = $this->variantData(['size_id' => Size::where('code', 'L')->value('id'), 'correction_reason' => 'Setup error']);
+        $permission = Permission::where('slug', 'products.update')->value('id');
+        DB::table('role_permissions')->where('role_id', $this->admin->role_id)->where('permission_id', $permission)->delete();
+        $url = '/products/'.$product->id.'/variants/'.$variant->id;
+        $this->put($url, $data)->assertForbidden();
+        DB::table('role_permissions')->insert(['role_id' => $this->admin->role_id, 'permission_id' => $permission]);
+        $this->mock(AuditService::class)->shouldReceive('record')->once()->andThrow(new \RuntimeException('Audit unavailable'));
+        try {
+            app(ProductCatalogueService::class)->saveVariant($product, $data, $variant, $this->admin);
+            $this->fail('Correction succeeded without an audit.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Audit unavailable', $exception->getMessage());
+        }
+        $this->assertSame($this->size->id, $variant->fresh()->size_id);
+        $this->assertSame(10, $variant->inventory->physical_quantity);
+    }
+
+    public function test_salesperson_cannot_edit_even_when_granted_catalogue_permissions(): void
+    {
+        $product = $this->product();
+        $variant = app(ProductCatalogueService::class)->saveVariant($product, $this->variantData());
+        $salesperson = User::factory()->create(['role_id' => Role::where('slug', 'salesperson')->value('id')]);
+        foreach (['products.create', 'products.update', 'inventory.adjust'] as $permission) {
+            DB::table('role_permissions')->insertOrIgnore(['role_id' => $salesperson->role_id, 'permission_id' => Permission::where('slug', $permission)->value('id')]);
+        }
+        $this->actingAs($salesperson);
+        $this->get('/products/'.$product->id)->assertOk()->assertDontSee('Add variant')->assertDontSee('Edit variant');
+        $this->get('/products/'.$product->id.'/variants/'.$variant->id.'/edit')->assertForbidden();
+        $this->put('/products/'.$product->id.'/variants/'.$variant->id, $this->variantData(['selling_price' => '1']))->assertForbidden();
+        $this->put('/products/'.$product->id, $this->productData(['name' => 'Changed']))->assertForbidden();
+        $this->post('/products', $this->productData(['product_code' => 'NEW']))->assertForbidden();
+        $this->delete('/products/'.$product->id.'/variants/'.$variant->id)->assertForbidden();
+        try {
+            app(ProductCatalogueService::class)->saveVariant($product, $this->variantData(['selling_price' => '1']), $variant, $salesperson);
+            $this->fail('Salesperson edited through the service.');
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+        }
+        $this->assertSame('45000.50', $variant->fresh()->selling_price);
     }
 }

@@ -2076,3 +2076,11 @@ joins. See [Phase 21 report](../docs/PHASE_21.md) and [coverage matrix](../docs/
 
 Final Phase 21 result: 224 unit/application tests and 35 MySQL tests passed;
 browser checks and the full QA runner passed. Next: Phase 22 owner/staff UAT.
+
+## Phase 22 preparation status
+
+The [store walkthrough](../docs/UAT_GUIDE.md) and [results sheet](../docs/UAT_RESULTS.md)
+are prepared, including exact stock/profit expectations and the approved damaged
+return cost treatment. Practice environment choice/setup and actual owner/staff
+execution remain pending. No acceptance result is claimed. See
+[Phase 22 report](../docs/PHASE_22.md). Phase 23 production preparation has not started.

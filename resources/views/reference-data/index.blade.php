@@ -9,7 +9,7 @@
     </div>
     @if(session('status'))<p role="status" class="mb-5 rounded-lg border border-success bg-surface p-4 text-sm">{{ session('status') }}</p>@endif
     <form method="GET" class="mb-6 grid items-end gap-4 rounded-xl border border-border bg-surface p-5 sm:grid-cols-[1fr_180px_auto]">
-        <x-input name="q" label="Search" :value="$filters['q'] ?? ''" placeholder="Name or code" maxlength="150" />
+        <x-input name="q" label="Search" :value="$filters['q'] ?? ''" :placeholder="$type->value === 'colours' ? 'Colour name' : 'Name or code'" maxlength="150" />
         <x-select name="status" label="Status">
             <option value="">All statuses</option>
             <option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option>
@@ -29,7 +29,7 @@
                     <caption class="sr-only">{{ $type->label() }} and their current status</caption>
                     <thead class="border-b border-border bg-background"><tr>
                         <th scope="col" class="px-5 py-4 font-medium">Name</th>
-                        <th scope="col" class="px-5 py-4 font-medium">{{ ucfirst($type->identifier()) }}</th>
+                        @if($type->value !== 'colours')<th scope="col" class="px-5 py-4 font-medium">{{ ucfirst($type->identifier()) }}</th>@endif
                         @if($type->value === 'sizes')<th scope="col" class="px-5 py-4 font-medium">Order</th>@endif
                         <th scope="col" class="px-5 py-4 font-medium">Status</th>
                         <th scope="col" class="px-5 py-4 font-medium"><span class="sr-only">Actions</span></th>
@@ -38,10 +38,9 @@
                     @foreach($records as $record)
                         <tr class="hover:bg-selected/50">
                             <th scope="row" class="max-w-xs break-words px-5 py-4 font-medium">
-                                @if($type->value === 'colours' && $record->hex_code)<span aria-hidden="true" class="mr-2 inline-block size-4 rounded-full border border-border align-middle" style="background-color: {{ $record->hex_code }}"></span>@endif
                                 {{ $record->name }}
                             </th>
-                            <td class="max-w-xs break-all px-5 py-4 text-text-secondary">{{ $record->{$type->identifier()} }}</td>
+                            @if($type->value !== 'colours')<td class="max-w-xs break-all px-5 py-4 text-text-secondary">{{ $record->{$type->identifier()} }}</td>@endif
                             @if($type->value === 'sizes')<td class="px-5 py-4">{{ $record->sort_order }}</td>@endif
                             <td class="px-5 py-4"><x-badge :tone="$record->is_active ? 'success' : 'warning'">{{ $record->is_active ? 'Active' : 'Inactive' }}</x-badge></td>
                             <td class="px-5 py-4 text-right"><a href="{{ route('reference.edit', [$type->value, $record->id]) }}" class="inline-flex min-h-11 items-center font-medium underline underline-offset-4" aria-label="Edit {{ $record->name }}">Edit</a></td>

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ReferenceType;
 use App\Models\Category;
+use App\Models\Colour;
 use App\Models\ExpenseCategory;
 use App\Models\Permission;
 use App\Models\Role;
@@ -30,6 +31,16 @@ class ReferenceDataTest extends TestCase
     private function staff(string $role = 'administrator'): User
     {
         return User::factory()->create(['role_id' => Role::where('slug', $role)->value('id')]);
+    }
+
+    public function test_starter_colours_are_repeatable_and_preserve_customizations(): void
+    {
+        $blue = Colour::where('code', 'BLUE')->firstOrFail();
+        $blue->update(['name' => 'Custom blue', 'is_active' => false, 'hex_code' => '#123456']);
+        $this->seed(ReferenceDataSeeder::class);
+        $this->assertDatabaseCount('colours', 12);
+        $this->assertDatabaseHas('colours', ['id' => $blue->id, 'name' => 'Custom blue', 'is_active' => false, 'hex_code' => '#123456']);
+        $this->assertDatabaseHas('colours', ['code' => 'BLACK', 'is_active' => true]);
     }
 
     public static function types(): array
@@ -87,6 +98,13 @@ class ReferenceDataTest extends TestCase
         $url = '/reference-data/'.$type;
         $identifier = ReferenceType::from($type)->identifier();
         $this->post($url, $data)->assertSessionHasNoErrors();
+        if ($type === 'colours') {
+            $this->post($url, $data)->assertSessionHasErrors('name');
+            $record = Colour::where('name', $data['name'])->firstOrFail();
+            $this->put($url.'/'.$record->id, $data)->assertSessionHasNoErrors();
+
+            return;
+        }
         $this->post($url, array_replace($data, [$identifier => ' '.strtolower($data[$identifier]).' ']))->assertSessionHasErrors($identifier);
         $record = ReferenceType::from($type)->model()::where($identifier, $data[$identifier])->firstOrFail();
         $this->put($url.'/'.$record->id, $data)->assertSessionHasNoErrors();
@@ -101,19 +119,35 @@ class ReferenceDataTest extends TestCase
         $identifier = ReferenceType::from($type)->identifier();
         $count = ReferenceType::from($type)->model()::count();
         $this->post('/reference-data/'.$type, array_replace($data, ['name' => ' ', $identifier => 'bad/code', 'is_active' => 'yes']))
-            ->assertSessionHasErrors(['name', $identifier, 'is_active']);
+            ->assertSessionHasErrors($type === 'colours' ? ['name', 'is_active'] : ['name', $identifier, 'is_active']);
         $this->assertDatabaseCount($type, $count);
         $this->put('/reference-data/'.$type.'/999999', $data)->assertNotFound();
     }
 
-    public function test_size_order_and_colour_hex_are_validated(): void
+    public function test_size_order_is_validated_and_colours_need_only_a_name(): void
     {
         $this->actingAs($this->staff());
         $this->post('/reference-data/sizes', ['name' => 'Test', 'code' => 'TEST', 'sort_order' => -1, 'is_active' => 1])->assertSessionHasErrors('sort_order');
-        $this->post('/reference-data/colours', ['name' => 'Test', 'code' => 'TEST', 'hex_code' => 'red;background:url(x)', 'is_active' => 1])->assertSessionHasErrors('hex_code');
-        $this->post('/reference-data/colours', ['name' => 'Test', 'code' => 'test', 'hex_code' => '#aabbcc', 'is_active' => 1])->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('colours', ['code' => 'TEST', 'hex_code' => '#AABBCC']);
+        $this->get('/reference-data/colours/create')->assertOk()->assertDontSee('name="code"', false)->assertDontSee('name="hex_code"', false);
+        $this->post('/reference-data/colours', ['name' => 'Ocean Blue', 'is_active' => 1])->assertSessionHasNoErrors();
+        $colour = Colour::where('name', 'Ocean Blue')->firstOrFail();
+        $this->assertSame('OCEAN-BLUE', $colour->code);
+        $this->assertNull($colour->hex_code);
+        $this->put('/reference-data/colours/'.$colour->id, ['name' => 'Deep Ocean Blue', 'is_active' => 0, 'code' => 'TAMPERED', 'hex_code' => '#123456'])->assertSessionHasNoErrors();
+        $this->assertSame('OCEAN-BLUE', $colour->fresh()->code);
+        $this->assertNull($colour->fresh()->hex_code);
+        $this->get('/reference-data/colours')->assertSee('Deep Ocean Blue')->assertDontSee('OCEAN-BLUE');
         $this->get('/reference-data/sizes')->assertSeeInOrder(['XS', '>S<', '>M<', '>L<', 'XL', 'XXL'], false);
+    }
+
+    public function test_colour_names_with_the_same_generated_code_remain_distinct(): void
+    {
+        $this->actingAs($this->staff());
+        foreach (['Ocean Blue', 'Ocean-Blue'] as $name) {
+            $this->post('/reference-data/colours', ['name' => $name, 'is_active' => 1])->assertSessionHasNoErrors();
+        }
+        $this->assertDatabaseHas('colours', ['name' => 'Ocean Blue', 'code' => 'OCEAN-BLUE']);
+        $this->assertDatabaseHas('colours', ['name' => 'Ocean-Blue', 'code' => 'OCEAN-BLUE-2']);
     }
 
     public function test_search_pagination_escaping_and_empty_states(): void

@@ -108,3 +108,7 @@ See [Phase 20 security review](docs/PHASE_20.md); local development is expected 
 
 Repeatable local QA: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\qa.ps1`.
 See [QA coverage](docs/QA_MATRIX.md) and [Phase 21](docs/PHASE_21.md).
+
+Phase 22 acceptance preparation: [store walkthrough](docs/UAT_GUIDE.md) and
+[results sheet](docs/UAT_RESULTS.md). Practice environment selection and actual
+owner/staff acceptance are pending; see [Phase 22](docs/PHASE_22.md).

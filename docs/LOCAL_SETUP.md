@@ -127,6 +127,25 @@ on their next protected request. Production requires HTTPS and secure cookies.
 
 ## Catalogue setup (Phase 3)
 
+Common starter colours are now included. For an existing local installation, run
+`& '.tools/php/php.exe' artisan db:seed --class=ColourSeeder` once and reload the
+variant form. Existing colour names/statuses are preserved. Use **Catalogue setup
+→ Colours** (also linked from the variant form) to add or activate other colours.
+Colour setup asks for the name and active/inactive status only. Its internal code
+is generated automatically and retained on rename; hex codes are not required.
+
+On **Add variant**, choose size/colour and leave SKU blank to generate it on save,
+for example `JEANS-001-BLUE-M`. You may enter your own unique SKU. Existing SKUs
+remain unchanged when editing unless you explicitly replace them.
+
+Administrators can edit variant details even after a sale, order, exchange or stock
+movement. On **Edit variant**, select the correct values, enter **Reason for size
+or colour correction** when the variant has activity, and save. Stock quantities,
+average cost and recorded transaction amounts stay unchanged. Linked documents
+display corrected catalogue labels; the attribute correction is audited. Salespeople
+cannot edit variants. Existing SKUs are not automatically renamed, and a duplicate
+SKU or size/colour combination remains invalid.
+
 For a fresh checkout or upgrade:
 
 ```powershell
@@ -572,3 +591,12 @@ in the test database, then rolls the transaction back.
 
 The automated runner does not claim browser/UAT/production verification. See
 [QA coverage](QA_MATRIX.md) and [Phase 21](PHASE_21.md) for the recorded review.
+
+## Phase 22 — Store acceptance testing
+
+Use the [store walkthrough](UAT_GUIDE.md) and [results sheet](UAT_RESULTS.md)
+to try the complete workflow and compare exact stock/profit totals. First confirm
+an empty practice database; do not mix its sample transactions with real history
+or use the automated `mfbms_testing` database. The normal `scripts/serve.cmd`
+launcher uses the current `.env`, so it does not isolate practice data by itself.
+Owner/staff results and sign-off are pending; see [Phase 22](PHASE_22.md).

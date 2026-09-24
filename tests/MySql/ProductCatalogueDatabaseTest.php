@@ -8,7 +8,9 @@ use App\Models\ProductVariant;
 use App\Models\Role;
 use App\Models\Size;
 use App\Models\User;
+use App\Services\OpeningStockService;
 use App\Services\ProductCatalogueService;
+use App\Services\SaleService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -49,6 +51,26 @@ class ProductCatalogueDatabaseTest extends TestCase
                 }
             }
             $this->actingAs($user)->get('/products/'.$product->id)->assertOk()->assertSee('9999999999999.99');
+            app(OpeningStockService::class)->confirm($variant, ['quantity' => 5, 'unit_cost' => '20000'], $user);
+            $black = Colour::where('code', 'BLACK')->firstOrFail();
+            $service->saveVariant($product, ['sku' => $variant->sku, 'size_id' => $size->id, 'colour_id' => $black->id,
+                'selling_price' => $variant->selling_price, 'low_stock_threshold' => 2, 'is_active' => 1,
+                'correction_reason' => 'Correct unsold opening stock'], $variant, $user);
+            $this->assertSame($black->id, $variant->fresh()->colour_id);
+            $this->assertSame(5, $variant->inventory->physical_quantity);
+            $this->assertSame('20000.00', $variant->fresh()->weighted_average_cost);
+            $this->assertSame(1, $variant->movements()->count());
+            $this->assertDatabaseHas('audit_logs', ['action' => 'CORRECT_VARIANT_ATTRIBUTES', 'entity_id' => $variant->id, 'user_id' => $user->id]);
+            $sale = app(SaleService::class)->completeSale(['request_key' => 'mysql:variant-correction', 'payment_method' => 'CASH',
+                'items' => [['product_variant_id' => $variant->id, 'quantity' => 1, 'unit_price' => '45000']]], $user);
+            $saleBefore = DB::table('sale_items')->where('sale_id', $sale->id)->get()->toJson();
+            $service->saveVariant($product, ['sku' => 'CORRECTED-AFTER-SALE', 'size_id' => $size->id, 'colour_id' => $colour->id,
+                'selling_price' => '50000', 'low_stock_threshold' => 3, 'is_active' => 1,
+                'correction_reason' => 'Administrator correction after sale'], $variant, $user);
+            $this->assertSame('CORRECTED-AFTER-SALE', $variant->fresh()->sku);
+            $this->assertSame($colour->id, $variant->fresh()->colour_id);
+            $this->assertSame(4, $variant->inventory()->first()->physical_quantity);
+            $this->assertSame($saleBefore, DB::table('sale_items')->where('sale_id', $sale->id)->get()->toJson());
             try {
                 DB::table('categories')->where('id', $category->id)->delete();
                 $this->fail('Referenced category was permanently deleted.');

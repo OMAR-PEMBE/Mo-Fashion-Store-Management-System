@@ -53,6 +53,23 @@ Each variant shall have its own:
 
 Inventory shall be tracked **per variant**, not only per product.
 
+New variants may leave SKU blank: the server generates it from the product code,
+colour code and size code (omitting absent attributes), with a numeric suffix if
+already used, including archived SKUs. Staff may enter a custom unique SKU instead.
+Editing a variant does not automatically rename its existing SKU. Starter colours
+are seeded without overwriting customized or inactive reference records.
+Colour forms and lists use names, without code or hex-code controls. Internal
+colour codes are generated on creation and retained on rename for stable references.
+
+Administrators with product-update permission may edit all variant catalogue fields,
+including size/colour after sales, orders, exchanges or stock activity. A reason is
+required for size/colour corrections on used variants, and old/new attributes are
+audited. Salespeople cannot create or edit products/variants even if catalogue-write
+permissions are assigned to their role. Corrections retain variant ID, stock balances,
+movement records and original financial transaction quantities/prices/costs/totals.
+Linked records display current corrected catalogue labels. Existing SKU is retained
+unless explicitly edited. Unique SKU and size/colour combination rules still apply.
+
 ---
 
 # Supplier Management

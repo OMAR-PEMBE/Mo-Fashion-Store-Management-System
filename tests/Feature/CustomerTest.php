@@ -34,7 +34,7 @@ class CustomerTest extends TestCase
     public function test_registration_preferences_consent_and_statistics(): void
     {
         $category = Category::create(['name' => 'Denim', 'slug' => 'denim']);
-        $colour = Colour::create(['name' => 'Blue', 'code' => 'BLUE']);
+        $colour = Colour::where('code', 'BLUE')->firstOrFail();
         $this->get('/customers/create')->assertOk();
         $this->post('/customers', ['full_name' => ' Amina Juma ', 'phone' => '+255 (700) 123-456', 'whatsapp_number' => '00255 711 123456',
             'category_ids' => [$category->id], 'preferred_size_id' => Size::first()->id, 'preferred_colour_id' => $colour->id, 'marketing_opt_in' => 1,

@@ -15,14 +15,11 @@
                         <textarea id="description" name="description" rows="4" maxlength="5000" class="w-full rounded-lg border border-border px-3 py-2 text-sm" @if($errors->has('description')) aria-invalid="true" aria-describedby="description-error" @endif>{{ old('description', $record->description) }}</textarea>
                         @error('description')<p id="description-error" class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror
                     </div>
-                @else
+                @elseif($type->value === 'sizes')
                     <x-input name="code" label="Code" :value="old('code', $record->code)" help="A unique code. Letters and numbers may be separated by hyphens or underscores. Saved in uppercase." required :maxlength="$type->value === 'sizes' ? 50 : 100" />
                 @endif
                 @if($type->value === 'sizes')
                     <x-input name="sort_order" label="Display order" type="number" :value="old('sort_order', $record->sort_order ?? 0)" help="Lower numbers appear first." required min="0" max="2147483647" step="1" />
-                @endif
-                @if($type->value === 'colours')
-                    <x-input name="hex_code" label="Colour hex code (optional)" :value="old('hex_code', $record->hex_code)" placeholder="#000000" help="Use # followed by six hexadecimal characters, for example #000000 for black." maxlength="7" />
                 @endif
                 <x-select name="is_active" label="Status" required>
                     <option value="1" @selected((string) old('is_active', (int) $record->is_active) === '1')>Active</option>

@@ -7,6 +7,7 @@ use App\Models\Exchange;
 use App\Models\ProductVariant;
 use App\Models\Role;
 use App\Models\Sale;
+use App\Models\Size;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ExchangeService;
@@ -81,6 +82,21 @@ class ExchangeTest extends TestCase
         return ['sale_id' => $sale->id, 'request_key' => $key, 'reason' => 'Different product wanted',
             'returned_items' => [['sale_item_id' => $sale->items()->first()->id, 'quantity' => $quantity, 'condition' => $condition]],
             'replacement_items' => [['product_variant_id' => $replacement->id, 'quantity' => 1]]];
+    }
+
+    public function test_administrator_can_correct_pending_exchange_variant_without_changing_exchange(): void
+    {
+        $sale = $this->sale();
+        $replacement = $this->replacement(quantity: 0);
+        $exchange = app(ExchangeService::class)->create($this->input($sale, $replacement), $this->admin);
+        $before = $exchange->items()->get()->toJson();
+        $this->put('/products/'.$replacement->product_id.'/variants/'.$replacement->id, [
+            'sku' => $replacement->sku, 'size_id' => Size::where('code', 'M')->value('id'),
+            'selling_price' => $replacement->selling_price, 'low_stock_threshold' => 2, 'is_active' => 1,
+            'correction_reason' => 'Mistake during setup',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(Size::where('code', 'M')->value('id'), $replacement->fresh()->size_id);
+        $this->assertSame($before, $exchange->items()->get()->toJson());
     }
 
     public function test_same_value_cross_product_exchange_snapshots_stock_and_idempotency(): void

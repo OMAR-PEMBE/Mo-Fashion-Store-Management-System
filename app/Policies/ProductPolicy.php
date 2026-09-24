@@ -20,12 +20,12 @@ class ProductPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasPermission('products.create');
+        return $user->role()->where('slug', 'administrator')->exists() && $user->hasPermission('products.create');
     }
 
     public function update(User $user, Product $product): bool
     {
-        return $user->hasPermission('products.update');
+        return $user->role()->where('slug', 'administrator')->exists() && $user->hasPermission('products.update');
     }
 
     public function delete(User $user, Product $product): bool

@@ -48,12 +48,25 @@ class ReferenceDataService
             ReferenceType::Sizes => ['sort_order' => ['required', 'integer', 'between:0,2147483647']],
             ReferenceType::Colours => ['hex_code' => ['nullable', 'string', 'regex:/^#[0-9A-F]{6}$/']],
         };
+        if ($type === ReferenceType::Colours) {
+            unset($rules['code'], $rules['hex_code']);
+            $rules['name'][] = Rule::unique('colours', 'name')->ignore($record->getKey());
+        }
         $data = Validator::make($input, $rules)->validate();
+        if ($type === ReferenceType::Colours && ! $record->exists) {
+            $base = strtoupper(Str::slug($data['name'])) ?: 'COLOUR';
+            $base = rtrim(substr($base, 0, 90), '-');
+            $data['code'] = $base;
+            $suffix = 2;
+            while ($model::where('code', $data['code'])->exists()) {
+                $data['code'] = $base.'-'.$suffix++;
+            }
+        }
         try {
             $record->fill($data)->save();
         } catch (UniqueConstraintViolationException) {
             // A concurrent request may claim the identifier after validation.
-            throw ValidationException::withMessages([$identifier => 'This '.$identifier.' is already in use.']);
+            throw ValidationException::withMessages([$type === ReferenceType::Colours ? 'name' : $identifier => 'This entry conflicts with another record. Please try again.']);
         }
 
         return $record;
