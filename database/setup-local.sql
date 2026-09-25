@@ -7,3 +7,10 @@ CREATE USER 'mfbms_app'@'localhost' IDENTIFIED BY 'REPLACE_WITH_DEVELOPMENT_PASS
 CREATE USER 'mfbms_test'@'localhost' IDENTIFIED BY 'REPLACE_WITH_TEST_PASSWORD';
 GRANT ALL PRIVILEGES ON mfbms.* TO 'mfbms_app'@'localhost';
 GRANT ALL PRIVILEGES ON mfbms_testing.* TO 'mfbms_test'@'localhost';
+
+-- Phase 24 backup restore checks. Each account may only rebuild its own scratch
+-- copy; app:verify-backup wipes it after every check. Safe to run again.
+CREATE DATABASE IF NOT EXISTS mfbms_restore_check CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS mfbms_testing_restore_check CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON mfbms_restore_check.* TO 'mfbms_app'@'localhost';
+GRANT ALL PRIVILEGES ON mfbms_testing_restore_check.* TO 'mfbms_test'@'localhost';

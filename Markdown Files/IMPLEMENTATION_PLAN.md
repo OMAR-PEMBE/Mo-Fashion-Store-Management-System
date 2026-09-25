@@ -2088,3 +2088,12 @@ execution remain pending. No acceptance result is claimed. See
 Environment decision, 2026-09-24: the owner confirmed local data is practice only.
 Continue UAT in mfbms without resetting records; use the captured
 [baseline](../docs/UAT_BASELINE.md). Owner workflow results remain pending.
+
+## Phase 24 backup tooling status (2026-09-26)
+
+Backup tooling was built ahead of Phase 23 because it is independent of UAT:
+daily compressed, checksummed MySQL backups in private storage, 7–30 day retention
+(default 14), and a weekly scheduled restore check into a wiped scratch database.
+A real local backup and restore check passed (MySQL suite: 36 tests passed).
+Off-site copy and failure alerts remain TBD with hosting.
+See [Phase 24 report](../docs/PHASE_24.md).
