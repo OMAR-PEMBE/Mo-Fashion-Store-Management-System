@@ -38,7 +38,8 @@ class ReferenceDataDatabaseTest extends TestCase
                     $service->save($type, $data);
                     $this->fail('Duplicate identifiers must fail validation.');
                 } catch (ValidationException $exception) {
-                    $this->assertArrayHasKey($type->identifier(), $exception->errors());
+                    // Colours are name-only; their code is generated (docs/VARIANT_CORRECTIONS.md).
+                    $this->assertArrayHasKey($type === ReferenceType::Colours ? 'name' : $type->identifier(), $exception->errors());
                 }
                 try {
                     $record->replicate()->save();
