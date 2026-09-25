@@ -6,14 +6,13 @@ Status: **Prepared; owner/staff execution pending.** Use this together with
 
 ## Before entering practice transactions
 
-The database choice is awaiting the owner: a separate practice database is
-recommended, or the owner can confirm that the current local database is
-disposable. Do not enter this sample into a database containing real store history.
-Do not use `mfbms_testing`: automated tests use that database.
+The owner confirmed the current local database contains only practice data. Use
+`mfbms`; keep existing practice records. Do not use `mfbms_testing`: automated tests
+use that database. See the recorded [starting totals](UAT_BASELINE.md).
 
 Record the confirmed practice database, application address, Git revision, browser,
-test date and testers in the results sheet. Start with no financial transactions,
-no stock and the normal seeded roles/permissions. Keep passwords out of the sheet.
+test date and testers in the results sheet. Start the new UAT variants with zero
+stock and use the normal seeded roles/permissions. Keep passwords out of the sheet.
 Environment setup and administrator sign-in must be verified before UAT-01.
 
 For the existing configured local application, `scripts/serve.cmd` starts
@@ -169,7 +168,9 @@ The **800,000** supplier purchases must not be added to these operating expenses
 ## UAT-10 — Owner's profit and stock reconciliation
 
 Open **Reports → Profit**, using dates that include all this session's transactions.
-Compare the calculation breakdown and source reports against the following values.
+The following values are the walkthrough's contribution. For the existing practice
+database, add the [recorded starting totals](UAT_BASELINE.md); that document lists
+the expected combined report values. Compare source documents as well as totals.
 If everything happened today, **Overview** today should agree after refreshing.
 
 | Component | Manual calculation | Expected TZS |
@@ -188,12 +189,13 @@ If everything happened today, **Overview** today should agree after refreshing.
 | Estimated Net Profit | 35,000 − 10,000 | **25,000** |
 
 Final stock: **17 Jeans** at WAC **25,000** and **9 Dresses** at WAC **30,000**;
-reserved **0** for both. Total stock value **695,000**. Inventory value plus
+reserved **0** for both. These two variants have stock value **695,000**; existing
+practice stock is additional. Their inventory value plus
 adjusted COGS is `695,000 + 105,000 = 800,000`, matching purchases in this sample.
 
 Verify sales, purchases, returns, refunds, exchanges and expense reports link to
 the recorded source documents. Download a CSV for the same date range and compare
-its rows/values. Sales history should still contain **two original sales**, even
+its rows/values. Sales history should still contain **two original UAT sales**, even
 after the refunds and exchange. Customer gross spending remains **90,000**.
 
 ## UAT-11 — Access, usability and stock protection

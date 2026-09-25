@@ -9,9 +9,9 @@ Use fictional practice data; do not record credentials or real customer details.
 
 | Field | Recorded value |
 | --- | --- |
-| Confirmed practice database (not mfbms_testing) | PENDING owner environment choice/setup |
-| Verified empty financial/stock baseline | PENDING |
-| Application address | PENDING |
+| Confirmed practice database (not mfbms_testing) | Local mfbms; owner confirmed practice-only data on 2026-09-24 |
+| Starting financial/stock baseline | Existing records retained; see [baseline](UAT_BASELINE.md); new UAT codes unused at capture |
+| Application address | http://127.0.0.1:8000 (scripts/serve.cmd) |
 | Git revision being accepted | PENDING |
 | Test start/end dates (Africa/Dar_es_Salaam) | PENDING |
 | Administrator tester | PENDING |
@@ -62,6 +62,10 @@ to enter manually. Copy the actual reference displayed by the application.
 
 Record values before any optional extra transactions. Use a report date range
 covering the complete session and note the range: **PENDING**.
+
+Values below are the UAT sample's changes, not combined database totals. Subtract
+the matching [baseline](UAT_BASELINE.md) from observed financial reports when
+completing this table. Stock figures refer only to the new UAT variants.
 
 | Metric | Expected | Observed |
 | --- | ---: | --- |

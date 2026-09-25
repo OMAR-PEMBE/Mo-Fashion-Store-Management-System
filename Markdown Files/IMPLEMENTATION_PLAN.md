@@ -2084,3 +2084,7 @@ are prepared, including exact stock/profit expectations and the approved damaged
 return cost treatment. Practice environment choice/setup and actual owner/staff
 execution remain pending. No acceptance result is claimed. See
 [Phase 22 report](../docs/PHASE_22.md). Phase 23 production preparation has not started.
+
+Environment decision, 2026-09-24: the owner confirmed local data is practice only.
+Continue UAT in mfbms without resetting records; use the captured
+[baseline](../docs/UAT_BASELINE.md). Owner workflow results remain pending.

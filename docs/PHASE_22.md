@@ -2,6 +2,12 @@
 
 Status: **Preparation complete; execution and owner acceptance pending.**
 
+Latest environment decision (2026-09-24): owner confirmed all local data is practice
+data. Continue in `mfbms`, retaining existing records. [Starting totals](UAT_BASELINE.md)
+are captured; the walkthrough/results sheet now reconcile changes above that
+baseline. This resolves the environment question recorded earlier below. Real
+business data will be entered on the production server, per the owner's instruction.
+
 ## Prepared
 
 - [Store walkthrough](UAT_GUIDE.md): receive stock, counter sale, customer,
