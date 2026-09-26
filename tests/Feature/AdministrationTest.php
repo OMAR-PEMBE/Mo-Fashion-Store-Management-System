@@ -159,4 +159,12 @@ class AdministrationTest extends TestCase
         $this->assertSame(0, $variant->inventory->physical_quantity);
         $this->assertDatabaseCount('inventory_movements', 0);
     }
+    public function test_activity_log_reads_in_plain_words_with_before_and_after(): void
+    {
+        app(AuditService::class)->record($this->admin, 'UPDATE_EXPENSE', 'expense', 5, ['amount' => '100.00', 'description' => 'Same'], ['amount' => '90.00', 'description' => 'Same']);
+        $id = DB::table('audit_logs')->where('action', 'UPDATE_EXPENSE')->value('id');
+        $this->get('/audit-logs')->assertOk()->assertSee('Edited an expense')->assertSee('Today')->assertSee('Expense #5');
+        $page = $this->get('/audit-logs/'.$id)->assertOk()->assertSee('What changed')->assertSee('100.00')->assertSee('90.00')->assertSee(route('expenses.show', 5), false);
+        $this->assertSame(1, substr_count($page->getContent(), '(changed)'));
+    }
 }

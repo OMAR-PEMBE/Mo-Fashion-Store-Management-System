@@ -263,3 +263,23 @@ used a status dropdown, and made the owner invent a temporary password.
 - All password boxes on these screens have show/hide.
 - `lint-views` (scratchpad script) now compiles and syntax-checks all 79 views before
   each commit, after the "letter before @if" Blade trap came back twice.
+
+## Admin: activity log (audit)
+
+**Found:** every row was a raw database timestamp (as the link), an action code
+(`UPDATE_EXPENSE`) and a record type (`product_variant #8`); the filter lists showed the
+same codes. The detail page dumped two blocks of JSON, so spotting what changed meant
+comparing them by eye.
+
+**Changed:**
+- `App\Support\AuditLabels`: past-tense sentences for every activity ("Edited an expense",
+  "Received a purchase into stock", "Changed what a role can do"), names for record types,
+  and links to the record itself. Unknown future codes fall back to readable words.
+- List ("Activity log"): grouped by day (Today, Yesterday, then the full date), time on
+  the left, the sentence as the link, then who · which record · the code in small type
+  for anyone who needs it. "Who" and "What" apply straight away; dates and a specific
+  record are folded away.
+- Detail: the sentence as the title with who and the exact time; a **What changed**
+  table, one row per field with Before and After side by side, changed rows highlighted
+  (and marked for screen readers); a details panel linking to the record. Secrets are
+  still redacted, and nothing can be edited or deleted.

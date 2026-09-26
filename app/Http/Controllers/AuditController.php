@@ -36,12 +36,26 @@ class AuditController extends Controller
         $service->authorize($request->user());
         $entry = DB::table('audit_logs')->leftJoin('users', 'users.id', '=', 'audit_logs.user_id')->where('audit_logs.id', $audit)->select('audit_logs.*', 'users.name as actor_name')->first();
         abort_unless($entry, 404);
-        $values = [];
+        $decoded = [];
         foreach (['old_values', 'new_values'] as $field) {
-            $decoded = json_decode($entry->$field ?? 'null', true);
-            $values[$field] = is_array($decoded) ? json_encode($service->redact($decoded), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : 'No values recorded';
+            $value = json_decode($entry->$field ?? 'null', true);
+            $decoded[$field] = is_array($value) ? $service->redact($value) : null;
         }
+        // One row per field, before and after side by side, so a change reads at a glance.
+        $show = fn ($value) => match (true) {
+            $value === null => null,
+            is_bool($value) => $value ? 'Yes' : 'No',
+            is_array($value) => json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            default => (string) $value,
+        };
+        $rows = [];
+        foreach (array_unique(array_merge(array_keys($decoded['old_values'] ?? []), array_keys($decoded['new_values'] ?? []))) as $key) {
+            $before = $show($decoded['old_values'][$key] ?? null);
+            $after = $show($decoded['new_values'][$key] ?? null);
+            $rows[] = ['field' => (string) $key, 'before' => $before, 'after' => $after, 'changed' => $decoded['old_values'] !== null && $before !== $after];
+        }
+        $hasBefore = $decoded['old_values'] !== null;
 
-        return view('audit.show', compact('entry', 'values'));
+        return view('audit.show', compact('entry', 'rows', 'hasBefore'));
     }
 }
