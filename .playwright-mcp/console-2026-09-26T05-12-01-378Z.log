@@ -1,0 +1,2 @@
+[    3867ms] [INFO] Autofocus processing was blocked because a document already has a focused element. @ http://127.0.0.1:8001/expenses/create:0
+[    6314ms] [INFO] Autofocus processing was blocked because a document already has a focused element. @ http://127.0.0.1:8001/expenses/create:0
