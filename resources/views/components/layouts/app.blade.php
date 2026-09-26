@@ -109,7 +109,7 @@
             </nav>
         </aside>
         <div class="min-w-0">
-            @php $showShortcut = $user?->can('sales.create') && ! request()->routeIs('sales.create', 'sales.review', 'dashboard'); @endphp
+            @php $showShortcut = $user?->can('sales.create') && ! request()->routeIs('sales.create', 'sales.review', 'sales.show', 'dashboard'); @endphp
             {{-- On phones the account menu lives in the dark bar, so this bar only appears when it carries the sale shortcut. --}}
             <header @class(['min-h-14 items-center justify-between gap-4 border-b border-border bg-surface px-5 sm:min-h-16 lg:flex lg:px-10', 'flex' => $showShortcut, 'hidden' => ! $showShortcut])>
                 <div>

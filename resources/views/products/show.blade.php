@@ -10,7 +10,7 @@
     @if(session('status'))<p role="status" class="mb-5 rounded-lg border border-success bg-surface p-4 text-sm">{{ session('status') }}</p>@endif
     @error('status')<p role="alert" class="mb-5 text-sm text-danger">{{ $message }}</p>@enderror
     <x-card class="mb-8">
-        <div class="flex flex-wrap items-center gap-4"><x-badge :tone="$product->is_active && !$product->trashed() ? 'success' : 'warning'">{{ $product->trashed() ? 'Archived' : ($product->is_active ? 'Active' : 'Inactive') }}</x-badge><span class="text-sm">Default price: {{ $product->default_selling_price !== null ? 'TZS '.$product->default_selling_price : 'Not set' }}</span></div>
+        <div class="flex flex-wrap items-center gap-4"><x-badge :tone="$product->is_active && !$product->trashed() ? 'success' : 'warning'">{{ $product->trashed() ? 'Archived' : ($product->is_active ? 'Active' : 'Inactive') }}</x-badge><span class="text-sm">Default price: {{ $product->default_selling_price !== null ? \App\Support\Money::format($product->default_selling_price) : 'Not set' }}</span></div>
         @if($product->description)<p class="mt-5 whitespace-pre-line break-words text-sm text-text-secondary">{{ $product->description }}</p>@endif
         @if(!$product->category->is_active || $product->category->trashed())<p class="mt-4 text-sm text-warning">This category is inactive. Choose an active category before activating this product or adding variants.</p>@endif
     </x-card>
@@ -27,10 +27,10 @@
             <tbody class="divide-y divide-border">@foreach($variants as $variant)<tr>
                 <th scope="row" class="min-w-40 max-w-xs break-all px-5 py-4 font-medium">{{ $variant->sku }}</th>
                 <td class="px-5 py-4">{{ $variant->size?->name ?? 'One size' }} / {{ $variant->colour?->name ?? 'No colour' }}@if(($variant->size && !$variant->size->is_active) || ($variant->colour && !$variant->colour->is_active))<span class="mt-1 block text-xs text-warning">Inactive reference</span>@endif</td>
-                <td class="whitespace-nowrap px-5 py-4">TZS {{ $variant->selling_price }}</td>
+                <td class="whitespace-nowrap px-5 py-4">@money($variant->selling_price)</td>
                 <td class="px-5 py-4">{{ $variant->low_stock_threshold }}</td>
                 <td class="px-5 py-4"><x-badge :tone="$variant->is_active && !$variant->trashed() ? 'success' : 'warning'">{{ $variant->trashed() ? 'Archived' : ($variant->is_active ? 'Active' : 'Inactive') }}</x-badge></td>
-                @can('products.view_cost')<td class="whitespace-nowrap px-5 py-4">TZS {{ $variant->weighted_average_cost }}</td>@endcan
+                @can('products.view_cost')<td class="whitespace-nowrap px-5 py-4">@money($variant->weighted_average_cost)</td>@endcan
                 @can('update', $product)<td class="px-5 py-4">
                     @if(!$product->trashed())
                         @if($variant->trashed())<form method="POST" action="{{ route('variants.restore', [$product, $variant->id]) }}">@csrf<x-button type="submit" variant="secondary">Restore</x-button></form>

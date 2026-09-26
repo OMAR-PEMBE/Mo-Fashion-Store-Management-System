@@ -87,3 +87,10 @@ window.addEventListener('pageshow', () => {
         button.textContent = button.dataset.idleLabel;
     });
 });
+
+// Mirrors App\Support\Money::format for amounts drawn in the browser: "TZS 45,000", cents only when present.
+window.formatMoney = (value) => {
+    const [whole, cents = '00'] = String(value ?? '0').replace('-', '').split('.');
+    const text = 'TZS ' + Number(whole).toLocaleString('en-US') + (cents.padEnd(2, '0').slice(0, 2) === '00' ? '' : '.' + cents.padEnd(2, '0').slice(0, 2));
+    return String(value ?? '').trim().startsWith('-') ? '-' + text : text;
+};

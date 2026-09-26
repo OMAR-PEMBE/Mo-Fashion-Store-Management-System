@@ -66,7 +66,7 @@ class PurchaseTest extends TestCase
         $this->assertSame('250000.00', $purchase->total_amount);
         $this->assertSame(PurchaseStatus::Draft, $purchase->status);
         $this->assertSame($this->admin->id, $purchase->created_by);
-        $this->get('/purchases/'.$purchase->id)->assertOk()->assertSee('Review purchase draft')->assertSee('250000.00');
+        $this->get('/purchases/'.$purchase->id)->assertOk()->assertSee('Review purchase draft')->assertSee('TZS 250,000')->assertDontSee('250000.00');
         $this->get('/purchases/'.$purchase->id.'/edit')->assertOk();
         $this->put('/purchases/'.$purchase->id, $this->data(['quantity' => 2, 'unit_cost' => '10.25']) + ['revision' => 1])->assertSessionHasNoErrors();
         $this->assertSame('20.50', $purchase->fresh()->total_amount);

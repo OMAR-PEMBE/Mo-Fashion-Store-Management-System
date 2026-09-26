@@ -5,8 +5,8 @@
     <x-card class="max-w-2xl"><form method="POST" action="{{ route($review ? 'opening-stock.confirm' : 'opening-stock.review', $variant) }}" class="space-y-6">@csrf
         @if($errors->any())<div role="alert" class="text-sm text-danger">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
         @if($review)
-            <dl class="grid grid-cols-2 gap-5 text-sm"><div><dt class="text-text-secondary">Existing quantity</dt><dd class="mt-2 text-xl font-semibold">{{ $data['quantity'] }}</dd></div><div><dt class="text-text-secondary">Unit cost / Initial WAC (TZS)</dt><dd class="mt-2 break-all text-xl font-semibold">{{ $data['unit_cost'] }}</dd></div></dl>
-            <input type="hidden" name="quantity" value="{{ $data['quantity'] }}"><input type="hidden" name="unit_cost" value="{{ $data['unit_cost'] }}">
+            <dl class="grid grid-cols-2 gap-5 text-sm"><div><dt class="text-text-secondary">Existing quantity</dt><dd class="mt-2 text-xl font-semibold">{{ $data['quantity'] }}</dd></div><div><dt class="text-text-secondary">Unit cost / Initial WAC (TZS)</dt><dd class="mt-2 break-all text-xl font-semibold">@money($data['unit_cost'])</dd></div></dl>
+            <input type="hidden" name="quantity" value="{{ $data['quantity'] }}"><input type="hidden" name="unit_cost" value="@money($data['unit_cost'])">
             <p class="text-sm text-text-secondary">Confirming records this stock and its initial average cost permanently. Check the physical count and cost before proceeding. This entry cannot be repeated or edited here.</p>
             <x-button type="submit">Confirm opening stock</x-button><a href="{{ route('opening-stock.create', $variant) }}" class="ml-4 text-sm underline">Start over</a>
         @else

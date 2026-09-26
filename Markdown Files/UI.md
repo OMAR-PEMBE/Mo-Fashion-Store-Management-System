@@ -388,6 +388,19 @@ Never communicate status through colour alone.
 
 ---
 
+## 13a. Money Display
+
+On screen, amounts read `TZS 175,000`: thousands separators, and cents only when
+present (`TZS 10,000.25`). Losses show a leading minus (`-TZS 15,000`) and use the
+Error colour with a text label, never colour alone. Table columns headed `(TZS)`
+show the number without repeating the currency.
+
+Use `@money($value)` in Blade, `App\Support\Money::format()` in PHP and
+`formatMoney()` in browser scripts. Stored values, form inputs and CSV exports
+keep exact two-decimal strings.
+
+---
+
 ## 14. Accessibility
 
 All colour combinations must be tested for readable contrast.

@@ -10,7 +10,7 @@
         <x-card title="Purchase history">
             @can('purchases.manage')
                 @forelse($purchases as $purchase)
-                    <div class="border-b border-border py-4 text-sm"><a href="{{ route('purchases.show', $purchase) }}" class="break-all underline">{{ $purchase->purchase_number }}</a><p class="mt-2 text-text-secondary">{{ $purchase->purchase_date->format('d M Y') }} · {{ $purchase->status->value }} · TZS {{ $purchase->total_amount }}</p></div>
+                    <div class="border-b border-border py-4 text-sm"><a href="{{ route('purchases.show', $purchase) }}" class="break-all underline">{{ $purchase->purchase_number }}</a><p class="mt-2 text-text-secondary">{{ $purchase->purchase_date->format('d M Y') }} · {{ $purchase->status->value }} · @money($purchase->total_amount)</p></div>
                 @empty<p class="text-sm text-text-secondary">No purchases recorded for this supplier.</p>@endforelse
                 <div class="mt-4">{{ $purchases->links() }}</div>
             @else<p class="text-sm text-text-secondary">Purchase history requires purchasing permission.</p>@endcan

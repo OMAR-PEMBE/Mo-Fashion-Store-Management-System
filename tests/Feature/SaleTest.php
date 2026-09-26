@@ -58,7 +58,7 @@ class SaleTest extends TestCase
     public function test_walk_in_sale_totals_snapshots_ledger_and_retry(): void
     {
         $this->stock();
-        $this->post('/pos/review', $this->data())->assertOk()->assertSee('89000.00');
+        $this->post('/pos/review', $this->data())->assertOk()->assertSee('TZS 89,000')->assertDontSee('89000.00');
         $this->assertDatabaseCount('sales', 0);
         $this->post('/sales', $this->data() + ['total_amount' => '1', 'total_cogs' => '1'])->assertSessionHasNoErrors();
         $sale = Sale::firstOrFail();
@@ -74,7 +74,7 @@ class SaleTest extends TestCase
         $this->assertDatabaseCount('sales', 1);
         $this->assertDatabaseCount('inventory_movements', 2);
         $this->post('/sales', $this->data(['quantity' => 3]))->assertConflict();
-        $this->get('/sales/'.$sale->id)->assertOk()->assertSee('Walk-in')->assertSee('39000.00');
+        $this->get('/sales/'.$sale->id)->assertOk()->assertSee('Walk-in')->assertSee('TZS 39,000');
         $this->assertDatabaseHas('audit_logs', ['action' => 'COMPLETE_SALE', 'entity_id' => $sale->id]);
         $this->assertDatabaseCount('customers', 0);
     }

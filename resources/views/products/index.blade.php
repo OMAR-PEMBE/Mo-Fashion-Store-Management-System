@@ -22,7 +22,7 @@
             <tbody class="divide-y divide-border">@foreach($products as $product)<tr class="hover:bg-selected/50">
                 <th scope="row" class="max-w-xs break-words px-5 py-4 font-medium">{{ $product->name }}<span class="mt-1 block break-all text-xs font-normal text-text-secondary">{{ $product->product_code }}</span></th>
                 <td class="px-5 py-4">{{ $product->category->name }}</td>
-                <td class="whitespace-nowrap px-5 py-4">{{ $product->default_selling_price !== null ? 'TZS '.$product->default_selling_price : 'Not set' }}</td>
+                <td class="whitespace-nowrap px-5 py-4">{{ $product->default_selling_price !== null ? \App\Support\Money::format($product->default_selling_price) : 'Not set' }}</td>
                 <td class="px-5 py-4"><x-badge :tone="$product->is_active && !$product->trashed() ? 'success' : 'warning'">{{ $product->trashed() ? 'Archived' : ($product->is_active ? 'Active' : 'Inactive') }}</x-badge></td>
                 <td class="px-5 py-4"><a href="{{ route('products.show', $product) }}" class="inline-flex min-h-11 items-center underline underline-offset-4" aria-label="View {{ $product->name }}">View</a></td>
             </tr>@endforeach</tbody>
