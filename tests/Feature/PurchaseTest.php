@@ -262,4 +262,27 @@ class PurchaseTest extends TestCase
         $this->app['env'] = 'local';
         $this->post('/purchases/'.$purchase->id.'/confirm', ['revision' => 1])->assertStatus(419);
     }
+    public function test_supplier_pages_show_received_buying_and_start_a_purchase_for_that_supplier(): void
+    {
+        app(PurchaseService::class)->confirm($this->draft(['quantity' => 4, 'unit_cost' => '25000']), $this->admin, 1);
+        $this->draft(['quantity' => 2]);
+        $this->supplier->update(['phone' => '0755 123 456']);
+
+        // Drafts are not money spent: only the received purchase counts.
+        $this->get('/suppliers')->assertOk()->assertViewHas('counts', ['active' => 1, 'inactive' => 0])
+            ->assertViewHas('suppliers', fn ($rows) => $rows->first()->received_count === 1 && (float) $rows->first()->received_total === 100000.0);
+        $link = route('purchases.create', ['supplier' => $this->supplier->id]);
+        $this->get('/suppliers/'.$this->supplier->id)->assertOk()->assertSee($link, false)->assertSee('tel:+255755123456', false)
+            ->assertViewHas('summary', fn ($summary) => $summary['count'] === 1 && $summary['drafts'] === 1)->assertSee('TZS 100,000');
+        $this->get($link)->assertOk()->assertViewHas('selectedSupplier', fn ($selected) => $selected['id'] === $this->supplier->id);
+
+        $this->supplier->update(['is_active' => false]);
+        $this->get($link)->assertOk()->assertViewHas('selectedSupplier', fn ($selected) => $selected['id'] === '');
+        $this->get('/suppliers/'.$this->supplier->id)->assertDontSee($link, false);
+
+        Supplier::create(['name' => 'Second', 'supplier_code' => 'SUP-007']);
+        $this->get('/suppliers/create')->assertOk()->assertSee('value="SUP-008"', false);
+        Supplier::create(['name' => 'Third', 'supplier_code' => 'SUP-0012']);
+        $this->get('/suppliers/create')->assertOk()->assertSee('value="SUP-0013"', false);
+    }
 }

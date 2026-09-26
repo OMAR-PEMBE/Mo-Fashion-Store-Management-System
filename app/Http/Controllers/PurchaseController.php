@@ -76,6 +76,10 @@ class PurchaseController extends Controller
         }
         $supplierId = old('supplier_id', $purchase->supplier_id);
         $supplier = is_scalar($supplierId) ? Supplier::withTrashed()->find($supplierId) : null;
+        // "New purchase" on a supplier page arrives with ?supplier=ID; only active suppliers are preselected.
+        if (! $supplier && ! $purchase->exists && ctype_digit((string) $request->query('supplier'))) {
+            $supplier = Supplier::where('is_active', true)->find($request->query('supplier'));
+        }
         $selectedSupplier = ['id' => $supplier?->id ?? '', 'label' => $supplier ? $supplier->name.' · '.$supplier->supplier_code : ''];
 
         return view('purchases.form', compact('purchase', 'lines', 'selectedSupplier'));

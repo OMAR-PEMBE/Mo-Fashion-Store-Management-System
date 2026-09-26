@@ -136,3 +136,24 @@ and every item, showed no totals until after saving, and used a dropdown for pay
   silence; a line total per item and a running units and cost total; Paid / Partly paid /
   Not yet chips; Save stays disabled with the reason shown until the draft is complete.
   On a phone, quantity and cost sit side by side.
+
+## Stock: suppliers
+
+**Found:** the list showed contact details only, with a separate View column and
+"Inactive" in the warning colour; the supplier page listed purchases with raw codes
+(`CONFIRMED`), phone numbers could not be tapped, and there was no way to start a purchase
+from the supplier; the form asked the owner to invent a unique code and used a status
+dropdown.
+
+**Changed:**
+- List: search with an icon, All / Active / Inactive tabs with counts, and per supplier
+  the last date bought, number of received purchases and total bought (drafts and
+  cancelled drafts are not counted). Whole rows are links; phone cards on small screens.
+- Supplier page: Call and WhatsApp buttons, **New purchase** with the supplier already
+  chosen (active suppliers only), four figures (total bought, purchases received, last
+  bought, drafts not received, highlighted when there are any) and a history with the
+  same plain status badges as Purchases.
+- Form: grouped into Business / Who to contact, the next supplier code filled in for you
+  in the store's own format (SUP-0001 → SUP-0004), and a plain "Still buying from them"
+  switch explaining what switching off does.
+- `Phone::international()` now builds tel: and wa.me links for customers and suppliers.

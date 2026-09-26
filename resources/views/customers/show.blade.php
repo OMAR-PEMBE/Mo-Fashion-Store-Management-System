@@ -1,13 +1,7 @@
 @php
     $user = auth()->user();
-    // wa.me and tel: need international digits; local Tanzanian numbers (0…) become 255….
-    $international = function (?string $number) {
-        $digits = preg_replace('/\D/', '', (string) $number);
-
-        return $digits === '' ? null : (str_starts_with($digits, '0') ? '255'.substr($digits, 1) : $digits);
-    };
-    $phone = $international($customer->phone);
-    $whatsapp = $international($customer->whatsapp_number) ?? $phone;
+    $phone = \App\Support\Phone::international($customer->phone);
+    $whatsapp = \App\Support\Phone::international($customer->whatsapp_number) ?? $phone;
     $average = $customer->total_purchases > 0 ? \Brick\Math\BigDecimal::of($customer->total_spent)->dividedBy($customer->total_purchases, 0, \Brick\Math\RoundingMode::HalfUp) : null;
 @endphp
 <x-layouts.app :title="$customer->full_name">

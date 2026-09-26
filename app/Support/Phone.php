@@ -20,4 +20,12 @@ class Phone
 
         return $number;
     }
+
+    /** Digits for tel: and wa.me links: local numbers (0…) become 255…. */
+    public static function international(?string $number): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string) $number);
+
+        return $digits === '' ? null : (str_starts_with($digits, '0') ? '255'.substr($digits, 1) : $digits);
+    }
 }
