@@ -7,7 +7,7 @@
             @else<x-action-link :href="route('products.edit', $product)" :secondary="true">Edit product</x-action-link>@endif
         @endcan
     </div>
-    @if(session('status'))<p role="status" class="mb-5 rounded-lg border border-success bg-surface p-4 text-sm">{{ session('status') }}</p>@endif
+    
     @error('status')<p role="alert" class="mb-5 text-sm text-danger">{{ $message }}</p>@enderror
     <x-card class="mb-8">
         <div class="flex flex-wrap items-center gap-4"><x-badge :tone="$product->is_active && !$product->trashed() ? 'success' : 'warning'">{{ $product->trashed() ? 'Archived' : ($product->is_active ? 'Active' : 'Inactive') }}</x-badge><span class="text-sm">Default price: {{ $product->default_selling_price !== null ? \App\Support\Money::format($product->default_selling_price) : 'Not set' }}</span></div>

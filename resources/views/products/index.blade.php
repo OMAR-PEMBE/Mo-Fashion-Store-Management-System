@@ -3,7 +3,7 @@
         <div><p class="mb-2 text-sm text-text-secondary">Catalogue</p><h1 class="text-3xl font-bold">Products</h1><p class="mt-3 text-sm text-text-secondary">Find your products and their size and colour options.</p></div>
         @can('create', \App\Models\Product::class)<x-action-link :href="route('products.create')">Add product</x-action-link>@endcan
     </div>
-    @if(session('status'))<p role="status" class="mb-5 rounded-lg border border-success bg-surface p-4 text-sm">{{ session('status') }}</p>@endif
+    
     <form method="GET" class="mb-6 grid items-end gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-2 xl:grid-cols-4">
         <x-input name="q" label="Search" :value="$filters['q'] ?? ''" placeholder="Name, product code or SKU" maxlength="191" />
         <x-select name="category_id" label="Category"><option value="">All categories</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected(($filters['category_id'] ?? '') == $category->id)>{{ $category->name }}</option>@endforeach</x-select>

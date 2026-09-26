@@ -1,7 +1,7 @@
 <x-layouts.app title="Purchase details">
     <a href="{{ route('purchases.index') }}" class="mb-5 inline-block text-sm underline">Back to purchases</a>
     <h1 class="text-3xl font-bold">{{ $purchase->status === \App\Enums\PurchaseStatus::Draft ? 'Review purchase draft' : 'Purchase details' }}</h1><p class="mb-7 mt-3 break-all text-sm text-text-secondary">{{ $purchase->purchase_number }}</p>
-    @if(session('status'))<p role="status" class="mb-5 rounded-lg border border-success bg-surface p-4 text-sm">{{ session('status') }}</p>@endif
+    
     @if($errors->any())<div role="alert" class="mb-5 rounded-lg border border-danger bg-surface p-4 text-sm text-danger">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
     <x-card class="mb-6"><dl class="grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-3">
         <div><dt class="mb-2 text-text-secondary">Supplier</dt><dd class="break-words">{{ $purchase->supplier->name }}</dd></div><div><dt class="mb-2 text-text-secondary">Purchase date</dt><dd>{{ $purchase->purchase_date->format('d M Y') }}</dd></div><div><dt class="mb-2 text-text-secondary">Status</dt><dd><x-badge :tone="$purchase->status === \App\Enums\PurchaseStatus::Confirmed ? 'success' : 'info'">{{ $purchase->status->value }}</x-badge></dd></div>

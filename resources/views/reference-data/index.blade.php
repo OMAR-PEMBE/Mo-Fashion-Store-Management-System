@@ -7,7 +7,7 @@
         </div>
         <a href="{{ route('reference.create', $type->value) }}" class="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold hover:bg-primary-hover">Add {{ $type->singular() }}</a>
     </div>
-    @if(session('status'))<p role="status" class="mb-5 rounded-lg border border-success bg-surface p-4 text-sm">{{ session('status') }}</p>@endif
+    
     <form method="GET" class="mb-6 grid items-end gap-4 rounded-xl border border-border bg-surface p-5 sm:grid-cols-[1fr_180px_auto]">
         <x-input name="q" label="Search" :value="$filters['q'] ?? ''" :placeholder="$type->value === 'colours' ? 'Colour name' : 'Name or code'" maxlength="150" />
         <x-select name="status" label="Status">

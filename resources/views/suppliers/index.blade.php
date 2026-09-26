@@ -1,6 +1,6 @@
 <x-layouts.app title="Suppliers">
     <div class="mb-8 flex flex-wrap items-start justify-between gap-4"><div><h1 class="text-3xl font-bold">Suppliers</h1><p class="mt-3 text-sm text-text-secondary">Manage the businesses you buy stock from.</p></div><x-action-link :href="route('suppliers.create')">Add supplier</x-action-link></div>
-    @if(session('status'))<p role="status" class="mb-5 rounded-lg border border-success bg-surface p-4 text-sm">{{ session('status') }}</p>@endif
+    
     <form method="GET" class="mb-6 grid items-end gap-4 rounded-xl border border-border bg-surface p-5 sm:grid-cols-[1fr_180px_auto]">
         <x-input name="q" label="Search" :value="$filters['q'] ?? ''" placeholder="Name, code, contact, phone or email" maxlength="191" />
         <x-select name="status" label="Status"><option value="">All statuses</option><option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option><option value="inactive" @selected(($filters['status'] ?? '') === 'inactive')>Inactive</option></x-select>

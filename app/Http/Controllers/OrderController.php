@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Support\Status;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -14,11 +15,14 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'status' => ['nullable', Rule::enum(OrderStatus::class)]]);
-        $orders = Order::with('customer')->when(! $request->user()->hasPermission('orders.manage'), fn ($q) => $q->where('salesperson_id', $request->user()->id))
-            ->when($filters['q'] ?? null, fn ($q, $term) => $q->where(fn ($q) => $q->where('order_number', 'like', '%'.$term.'%')->orWhereHas('customer', fn ($q) => $q->where('full_name', 'like', '%'.$term.'%'))))
+        $visible = Order::query()->when(! $request->user()->hasPermission('orders.manage'), fn ($q) => $q->where('salesperson_id', $request->user()->id))
+            ->when($filters['q'] ?? null, fn ($q, $term) => $q->where(fn ($q) => $q->where('order_number', 'like', '%'.$term.'%')->orWhereHas('customer', fn ($q) => $q->where('full_name', 'like', '%'.$term.'%'))));
+        // Tab counts respect the same visibility and search as the list.
+        $counts = (clone $visible)->toBase()->selectRaw('status, COUNT(*) AS total')->groupBy('status')->pluck('total', 'status')->map(fn ($n) => (int) $n);
+        $orders = (clone $visible)->with('customer')->withCount('items')
             ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))->latest('id')->paginate(15)->withQueryString();
 
-        return view('orders.index', compact('orders', 'filters'));
+        return view('orders.index', compact('orders', 'filters', 'counts'));
     }
 
     public function create()
@@ -41,7 +45,7 @@ class OrderController extends Controller
     public function show(Request $request, Order $order, OrderService $service)
     {
         $service->authorize($request->user(), $order);
-        $order->load(['customer', 'salesperson', 'items.variant.product', 'reservations', 'sale']);
+        $order->load(['customer', 'salesperson', 'items.variant.product', 'items.variant.size', 'items.variant.colour', 'reservations', 'sale']);
         $timeline = DB::table('audit_logs')->leftJoin('users', 'users.id', '=', 'audit_logs.user_id')->where('entity_type', 'order')->where('entity_id', $order->id)
             ->orderBy('audit_logs.id')->get(['audit_logs.action', 'audit_logs.new_values', 'audit_logs.created_at', 'users.name']);
 
@@ -59,7 +63,7 @@ class OrderController extends Controller
     {
         $service->markPaid($order, $request->all(), $request->user());
 
-        return back()->with('status', 'Full payment recorded. Convert the order to a sale.');
+        return back()->with('status', 'Full payment recorded. Complete the sale to deduct the reserved stock.');
     }
 
     public function convert(Request $request, Order $order, OrderService $service)
@@ -82,6 +86,6 @@ class OrderController extends Controller
         $data = $request->validate(['status' => ['required', Rule::enum(OrderStatus::class)]]);
         $service->changeStatus($order, $data['status'], $request->user());
 
-        return back()->with('status', 'Fulfilment status updated.');
+        return back()->with('status', 'Order marked as '.strtolower(Status::label($data['status'])).'.');
     }
 }

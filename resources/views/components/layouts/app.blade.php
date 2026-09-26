@@ -120,7 +120,20 @@
                 </div>
                 @auth<x-account-menu :user="$user" :initials="$initials" class="hidden lg:block" />@endauth
             </header>
-            <main id="main-content" tabindex="-1" class="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-10">{{ $slot }}</main>
+            <main id="main-content" tabindex="-1" class="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-10">
+                {{-- Every action's confirmation appears in the same place on every page. --}}
+                @if(session('status'))
+                    <div role="status" x-data="{ shown: true }" x-show="shown" x-transition.opacity.duration.200ms
+                        class="mb-6 flex items-start gap-3 rounded-xl border border-success/30 bg-success/5 p-4 text-sm">
+                        <svg class="mt-0.5 size-5 shrink-0 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+                        <p class="flex-1 break-words">{{ session('status') }}</p>
+                        <button type="button" @click="shown = false" class="-m-1 rounded p-1 text-text-secondary hover:text-text-primary" aria-label="Dismiss message">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                @endif
+                {{ $slot }}
+            </main>
         </div>
     </div>
     @livewireScripts

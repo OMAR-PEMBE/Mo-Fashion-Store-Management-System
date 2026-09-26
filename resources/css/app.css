@@ -24,6 +24,19 @@
     --color-success: #2E7D32;
 }
 
+@layer components {
+    /* Shared list tables: charcoal headers, champagne hover, right-aligned amounts (UI.md §10). */
+    .data-table { @apply w-full text-left text-sm; }
+    .data-table thead { @apply border-b border-border bg-background/70; }
+    .data-table th { @apply px-5 py-3 font-semibold whitespace-nowrap; }
+    .data-table td, .data-table tbody th { @apply px-5 py-3.5 align-middle; }
+    .data-table tbody tr { @apply relative border-t border-border transition-colors first:border-t-0; }
+    .data-table tbody tr:hover { @apply bg-selected/50; }
+    .data-table .num { @apply text-right whitespace-nowrap tabular-nums; }
+    /* Makes a whole row or card clickable through its main link. */
+    .row-link { @apply font-semibold after:absolute after:inset-0 after:content-[''] focus-visible:outline-offset-2; }
+}
+
 @layer base {
     body { @apply bg-background font-sans text-text-primary antialiased; }
     button, a, input, select, textarea { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-info; }

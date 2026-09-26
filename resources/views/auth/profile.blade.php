@@ -10,7 +10,7 @@
             </dl>
         </x-card>
         <x-card title="Change password">
-            @if(session('status'))<p role="status" class="mb-5 text-sm text-success">{{ session('status') }}</p>@endif
+            
             <form method="POST" action="{{ route('password.update') }}" class="space-y-5">
                 @csrf
                 @method('PUT')

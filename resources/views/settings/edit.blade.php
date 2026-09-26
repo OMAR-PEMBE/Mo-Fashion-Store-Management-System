@@ -1,6 +1,6 @@
 <x-layouts.app title="Business settings">
     <h1 class="mb-6 text-3xl font-bold">Business settings</h1>
-    @if(session('status'))<p role="status" class="mb-5 text-sm text-success">{{ session('status') }}</p>@endif
+    
     @if($errors->any())<div role="alert" class="mb-5 text-sm text-danger">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
     <x-card><form method="POST" action="{{ route('settings.update') }}" class="space-y-6">@csrf @method('PATCH')<input type="hidden" name="revision" value="{{ old('revision', $revision) }}">
         <div class="grid gap-5 sm:grid-cols-2"><x-input name="business_name" label="Business name" :value="old('business_name', $values['business_name'])" required maxlength="150" /><x-input name="business_phone" label="Business phone" :value="old('business_phone', $values['business_phone'])" maxlength="30" /></div>
