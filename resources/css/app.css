@@ -47,3 +47,21 @@
     /* Quiet scrollbar for the dark sidebar navigation. */
     #main-navigation { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.18) transparent; }
 }
+
+/*
+ * Sign-in cover: charcoal with slow gold and bronze glows. The glows are radial gradients
+ * moved with transform only (no filter: blur), so cheap tablets stay smooth; motion stops
+ * for people who ask for reduced motion.
+ */
+.auth-cover { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: linear-gradient(135deg, #1d1c19 0%, #18181b 45%, #121214 100%); }
+.auth-cover .glow { position: absolute; border-radius: 9999px; will-change: transform; }
+.auth-cover .glow-gold { width: 70vmax; height: 70vmax; left: -20vmax; top: -30vmax; background: radial-gradient(circle, rgb(201 162 39 / 0.38) 0%, rgb(201 162 39 / 0.1) 38%, transparent 68%); animation: auth-drift-a 26s ease-in-out infinite alternate; }
+.auth-cover .glow-bronze { width: 60vmax; height: 60vmax; right: -25vmax; bottom: -30vmax; background: radial-gradient(circle, rgb(160 110 40 / 0.3) 0%, rgb(120 80 30 / 0.08) 40%, transparent 70%); animation: auth-drift-b 32s ease-in-out infinite alternate; }
+.auth-cover .glow-cream { width: 34vmax; height: 34vmax; left: 38%; top: 55%; background: radial-gradient(circle, rgb(243 235 211 / 0.1) 0%, transparent 65%); animation: auth-drift-c 22s ease-in-out infinite alternate; }
+.auth-cover .grain { position: absolute; inset: 0; opacity: 0.06; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.auth-card { animation: auth-rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both; }
+@keyframes auth-drift-a { to { transform: translate(12vmax, 8vmax) scale(1.08); } }
+@keyframes auth-drift-b { to { transform: translate(-10vmax, -6vmax) scale(1.12); } }
+@keyframes auth-drift-c { to { transform: translate(-8vmax, -10vmax); } }
+@keyframes auth-rise { from { opacity: 0; transform: translateY(14px); } }
+@media (prefers-reduced-motion: reduce) { .auth-cover .glow, .auth-card { animation: none; } }

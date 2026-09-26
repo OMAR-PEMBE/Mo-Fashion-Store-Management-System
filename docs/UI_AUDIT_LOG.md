@@ -363,3 +363,22 @@ editable by hand. Short format chosen.
 - The code can be corrected until the product has any stock movement or sale; after that
   it is read-only ("Fixed: it is already on receipts and stock records"), and the server
   refuses a change too. Existing products keep their codes.
+
+## Sign-in: full-screen cover
+
+**Asked for:** a full-screen gradient cover behind the sign-in form, with some animation,
+keeping the form itself the same.
+
+**Changed:**
+- The split screen (dark brand half, empty white half) is now one full-screen charcoal
+  cover with a slow gold glow, a bronze glow and a faint cream highlight, plus the
+  outlined monogram and a light grain. Brand colours only; no floating bubbles.
+- The form is unchanged in content (email and password with icons, show/hide, gold Sign in,
+  help line) and now sits on a solid white card with a soft shadow, never see-through, so
+  it stays readable in a bright shop.
+- Motion: the glows drift over 22–32 seconds using transforms only (no blur filters), and
+  the card rises once on load (0.5 s). The form never moves while typing. Everything stops
+  for people who ask for reduced motion.
+- Layout: side by side on laptops, one aligned column on tablets (vertically centred) and
+  phones, with no sideways scroll. The same cover is used by Reset your password, Choose a
+  new password and Access not permitted.
