@@ -6,6 +6,7 @@ use App\Enums\ReturnStatus;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Services\ReturnService;
+use App\Support\RecentSales;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -15,11 +16,13 @@ class ReturnController extends Controller
     public function index(Request $request)
     {
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'status' => ['nullable', Rule::enum(ReturnStatus::class)]]);
-        $returns = SaleReturn::with('sale')->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->whereHas('sale', fn ($q) => $q->where('salesperson_id', $request->user()->id)))
-            ->when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($q) => $q->where('return_number', 'like', '%'.$value.'%')->orWhereHas('sale', fn ($q) => $q->where('sale_number', 'like', '%'.$value.'%'))))
+        $visible = SaleReturn::query()->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->whereHas('sale', fn ($q) => $q->where('salesperson_id', $request->user()->id)))
+            ->when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($q) => $q->where('return_number', 'like', '%'.$value.'%')->orWhereHas('sale', fn ($q) => $q->where('sale_number', 'like', '%'.$value.'%'))));
+        $counts = (clone $visible)->toBase()->selectRaw('status, COUNT(*) AS total')->groupBy('status')->pluck('total', 'status')->map(fn ($n) => (int) $n);
+        $returns = (clone $visible)->with(['sale.customer' => fn ($q) => $q->withTrashed()])->withSum('items', 'quantity')
             ->when($filters['status'] ?? null, fn ($q, $value) => $q->where('status', $value))->latest('id')->paginate(15)->withQueryString();
 
-        return view('returns.index', compact('returns', 'filters'));
+        return view('returns.index', compact('returns', 'filters', 'counts'));
     }
 
     public function create(Request $request, ReturnService $service)
@@ -32,13 +35,15 @@ class ReturnController extends Controller
             $sale = Sale::where('sale_number', $data['sale_number'])->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->where('salesperson_id', $request->user()->id))->firstOrFail();
             $service->authorize($request->user(), $sale);
             $service->checkEligibility($sale);
-            $sale->load('items.variant.product');
+            $sale->load(['items.variant.product', 'items.variant.size', 'items.variant.colour']);
             $remaining = $service->remaining($sale);
             $deadline = $service->deadline($sale);
         }
         $requestKey = old('request_key', (string) Str::uuid());
 
-        return view('returns.create', compact('sale', 'remaining', 'deadline', 'requestKey'));
+        $recentSales = $sale ? collect() : RecentSales::for($request->user(), (int) config('returns.window_days') + 1, fn ($recent) => $service->deadline($recent));
+
+        return view('returns.create', compact('sale', 'remaining', 'deadline', 'requestKey', 'recentSales'));
     }
 
     public function store(Request $request, ReturnService $service)
@@ -51,7 +56,7 @@ class ReturnController extends Controller
     public function show(Request $request, SaleReturn $return, ReturnService $service)
     {
         $service->authorize($request->user(), $return->sale);
-        $return->load(['items.variant.product', 'processor', 'refunds']);
+        $return->load(['items.variant.product', 'items.variant.size', 'items.variant.colour', 'processor', 'refunds']);
         $deadline = $service->deadline($return->sale);
         $eligible = $deadline && now()->lte($deadline);
 

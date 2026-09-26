@@ -65,3 +65,32 @@ bottom, and showed three gold after-sales buttons each followed by its own histo
 - One "After the sale" panel: Return items / Refund money / Exchange items with a short
   explanation each, and a single combined history with status badges.
 - Owners see cost and gross profit for the sale in a separate panel.
+
+## After-sales: returns, refunds and exchanges
+
+**Found:** raw status codes everywhere (`PENDING`, `APPROVED`); lists without customers,
+amounts or counts; staff had to type a sale number from memory to start anything; plain
+number boxes and dropdowns for quantity and condition; accounting jargon ("Historical
+COGS adjustment"); the approval, completion and rejection buttons below long tables; the
+refund and exchange settlement dialogs preselected a payment method; no confirmation
+after any action.
+
+**Changed (same pattern for all three):**
+- Lists: search, status tabs with counts, customer names, amounts or "Customer pays /
+  Refund" differences, whole-row links and phone cards.
+- Starting one: type a sale number **or tap a recent sale** (returns and exchanges only
+  list sales still inside the 3-day window and show when each window closes).
+- Returns: −/+ quantity per item and one-tap condition (Sellable / Damaged / Defective /
+  Other) with a note saying what each does to stock; proof as one tap, receipt number
+  only when a receipt is used; the save button explains what is missing.
+- Refunds: per-item limits in plain words, a "Full amount" button, locked boxes for items
+  with nothing left to refund, and the running total on the send button.
+- Exchanges: items coming back and replacement tiles side by side, with a live estimate
+  ("Customer pays about TZS 20,000"); the server still calculates the final amount.
+- Detail pages: progress tracker (Requested → Approved → Completed / Money returned), a
+  "Next step" panel that knows who may act (e.g. salespeople see "Waiting for an
+  administrator" on refunds), clear blocked state when the 3-day window has closed,
+  past-tense summaries once done, and "Refund the customer" straight from a completed return.
+- Approval and settlement dialogs use one-tap methods with nothing preselected.
+- Shared building blocks added: `<x-workflow>` (also used by Orders now; finished
+  workflows show every step ticked), `<x-next-step>`, `<x-sale-picker>`, `RecentSales`.

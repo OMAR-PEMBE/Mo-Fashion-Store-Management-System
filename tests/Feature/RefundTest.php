@@ -96,7 +96,7 @@ class RefundTest extends TestCase
     {
         $sale = $this->sale();
         $original = $sale->getAttributes();
-        $this->get('/refunds/create?sale_number='.$sale->sale_number)->assertOk()->assertSee('TZS 134,000')->assertDontSee('134000.00');
+        $this->get('/refunds/create?sale_number='.$sale->sale_number)->assertOk()->assertSee('TZS 134,000')->assertDontSeeText('134000.00');
         $input = $this->input($sale) + ['status' => 'COMPLETED', 'refund_method' => 'BANK', 'amount' => '1'];
         $this->post('/refunds', $input)->assertRedirect();
         $refund = Refund::firstOrFail();
@@ -121,7 +121,7 @@ class RefundTest extends TestCase
         $this->assertDatabaseCount('inventory_movements', 2);
         $this->assertDatabaseCount('refunds', 2);
         $this->get('/refunds')->assertOk()->assertSee($refund->refund_number);
-        $this->get('/refunds/'.$refund->id)->assertOk()->assertSee('COMPLETED');
+        $this->get('/refunds/'.$refund->id)->assertOk()->assertSee('Money returned');
         $this->get('/sales/'.$sale->id)->assertSee($refund->refund_number);
     }
 

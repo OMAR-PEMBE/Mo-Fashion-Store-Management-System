@@ -30,24 +30,7 @@
     @if($status === OrderStatus::Cancelled)
         <div class="mb-6 rounded-2xl border border-border bg-surface p-5 text-sm"><p class="font-semibold">This order was cancelled.</p><p class="mt-1 text-text-secondary">Any reserved stock was released. The details below are kept for the record.</p></div>
     @else
-        <div class="mb-6 rounded-2xl border border-border bg-surface p-4 sm:hidden">
-            <div class="flex items-baseline justify-between text-sm"><p class="font-semibold">{{ \App\Support\Status::label($status) }}</p><p class="text-xs text-text-secondary">Step {{ $position + 1 }} of {{ count($flow) }}</p></div>
-            <div class="mt-2 h-1.5 rounded-full bg-background" aria-hidden="true"><div class="h-1.5 rounded-full bg-primary" style="width: {{ round(($position + 1) / count($flow) * 100) }}%"></div></div>
-            @if($position + 1 < count($flow))<p class="mt-2 text-xs text-text-secondary">Then: {{ \App\Support\Status::label($flow[$position + 1]) }}</p>@endif
-        </div>
-        <ol class="mb-6 hidden grid-cols-6 rounded-2xl border border-border bg-surface p-5 sm:grid" aria-label="Order progress">
-            @foreach($flow as $index => $step)
-                @php $state = $index < $position ? 'done' : ($index === $position ? 'current' : 'todo'); @endphp
-                <li class="relative flex flex-col items-center text-center" @if($state === 'current') aria-current="step" @endif>
-                    @if($index > 0)<span @class(['absolute top-3.5 right-1/2 -z-0 h-0.5 w-full', 'bg-primary' => $index <= $position, 'bg-border' => $index > $position]) aria-hidden="true"></span>@endif
-                    <span @class(['relative z-10 flex size-7 items-center justify-center rounded-full text-xs font-bold',
-                        'bg-primary text-text-primary' => $state === 'done', 'bg-text-primary text-white ring-4 ring-selected' => $state === 'current', 'border-2 border-border bg-surface text-text-secondary' => $state === 'todo'])>
-                        @if($state === 'done')<svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>@else{{ $index + 1 }}@endif
-                    </span>
-                    <span @class(['mt-2 text-xs', 'font-semibold' => $state !== 'todo', 'text-text-secondary' => $state === 'todo'])>{{ \App\Support\Status::label($step) }}<span class="sr-only">{{ $state === 'done' ? ' (done)' : ($state === 'current' ? ' (current step)' : '') }}</span></span>
-                </li>
-            @endforeach
-        </ol>
+        <x-workflow :steps="collect($flow)->map(fn ($step) => \App\Support\Status::label($step))->all()" :current="$status === OrderStatus::Delivered ? count($flow) : $position" label="Order progress" />
     @endif
 
     {{-- The one action that moves this order forward --}}

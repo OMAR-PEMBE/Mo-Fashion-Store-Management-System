@@ -114,7 +114,7 @@ class ExchangeTest extends TestCase
         $this->assertSame('0.00', $exchange->amount_due);
         $this->assertSame('0.00', $exchange->refund_due);
         $this->assertSame(7, $this->variant->inventory->physical_quantity);
-        $this->get('/exchanges/'.$exchange->id)->assertOk()->assertSee('Same-value exchange');
+        $this->get('/exchanges/'.$exchange->id)->assertOk()->assertSee('Same value: no payment or refund.');
         $this->post('/exchanges/'.$exchange->id.'/complete')->assertRedirect();
         $this->assertSame(8, $this->variant->fresh()->inventory->physical_quantity);
         $this->assertSame(4, $replacement->fresh()->inventory->physical_quantity);

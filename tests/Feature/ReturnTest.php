@@ -83,7 +83,7 @@ class ReturnTest extends TestCase
     {
         $sale = $this->sale();
         $original = $sale->getAttributes();
-        $this->get('/returns/create?sale_number='.$sale->sale_number)->assertOk()->assertSee('Remaining returnable: 3');
+        $this->get('/returns/create?sale_number='.$sale->sale_number)->assertOk()->assertSee('3 can still be returned');
         $input = $this->input($sale) + ['total_cost_adjustment' => 1, 'status' => 'COMPLETED'];
         $this->post('/returns', $input)->assertRedirect();
         $return = SaleReturn::firstOrFail();
@@ -103,7 +103,7 @@ class ReturnTest extends TestCase
         $this->post('/returns', $input)->assertRedirect('/returns/'.$return->id);
         $this->assertDatabaseCount('returns', 1);
         $this->assertDatabaseCount('inventory_movements', 3);
-        $this->get('/returns/'.$return->id)->assertOk()->assertSee('Historical COGS adjustment');
+        $this->get('/returns/'.$return->id)->assertOk()->assertSee('Cost reversed from sales');
         $this->get('/sales/'.$sale->id)->assertSee($return->return_number);
         $this->get('/returns')->assertSee($return->return_number);
     }

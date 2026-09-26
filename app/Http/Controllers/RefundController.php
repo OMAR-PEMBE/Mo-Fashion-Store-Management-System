@@ -6,6 +6,7 @@ use App\Enums\RefundStatus;
 use App\Models\Refund;
 use App\Models\Sale;
 use App\Services\RefundService;
+use App\Support\RecentSales;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -15,11 +16,13 @@ class RefundController extends Controller
     public function index(Request $request)
     {
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'status' => ['nullable', Rule::enum(RefundStatus::class)]]);
-        $refunds = Refund::with('sale')->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->whereHas('sale', fn ($q) => $q->where('salesperson_id', $request->user()->id)))
-            ->when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($q) => $q->where('refund_number', 'like', '%'.$value.'%')->orWhereHas('sale', fn ($q) => $q->where('sale_number', 'like', '%'.$value.'%'))))
+        $visible = Refund::query()->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->whereHas('sale', fn ($q) => $q->where('salesperson_id', $request->user()->id)))
+            ->when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($q) => $q->where('refund_number', 'like', '%'.$value.'%')->orWhereHas('sale', fn ($q) => $q->where('sale_number', 'like', '%'.$value.'%'))));
+        $counts = (clone $visible)->toBase()->selectRaw('status, COUNT(*) AS total')->groupBy('status')->pluck('total', 'status')->map(fn ($n) => (int) $n);
+        $refunds = (clone $visible)->with(['sale.customer' => fn ($q) => $q->withTrashed()])
             ->when($filters['status'] ?? null, fn ($q, $value) => $q->where('status', $value))->latest('id')->paginate(15)->withQueryString();
 
-        return view('refunds.index', compact('refunds', 'filters'));
+        return view('refunds.index', compact('refunds', 'filters', 'counts'));
     }
 
     public function create(Request $request, RefundService $service)
@@ -31,12 +34,14 @@ class RefundController extends Controller
         if ($data['sale_number'] ?? null) {
             $sale = Sale::where('sale_number', $data['sale_number'])->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->where('salesperson_id', $request->user()->id))->firstOrFail();
             $service->authorize($request->user(), $sale);
-            $sale->load(['items.variant.product', 'returns' => fn ($q) => $q->where('status', 'COMPLETED')]);
+            $sale->load(['items.variant.product', 'items.variant.size', 'items.variant.colour', 'returns' => fn ($q) => $q->where('status', 'COMPLETED')]);
             $limits = $service->available($sale, $returnId);
         }
         $requestKey = old('request_key', (string) Str::uuid());
 
-        return view('refunds.create', compact('sale', 'limits', 'returnId', 'requestKey'));
+        $recentSales = $sale ? collect() : RecentSales::for($request->user(), 14);
+
+        return view('refunds.create', compact('sale', 'limits', 'returnId', 'requestKey', 'recentSales'));
     }
 
     public function store(Request $request, RefundService $service)
@@ -49,7 +54,7 @@ class RefundController extends Controller
     public function show(Request $request, Refund $refund, RefundService $service)
     {
         $service->authorize($request->user(), $refund->sale);
-        $refund->load(['items.saleItem.variant.product', 'requester', 'saleReturn']);
+        $refund->load(['items.saleItem.variant.product', 'items.saleItem.variant.size', 'items.saleItem.variant.colour', 'requester', 'saleReturn']);
         $limits = $service->available($refund->sale, $refund->return_id, $refund->id);
 
         return view('refunds.show', compact('refund', 'limits'));

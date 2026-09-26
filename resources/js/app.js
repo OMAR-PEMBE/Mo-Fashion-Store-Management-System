@@ -18,7 +18,7 @@ window.saleForm = (customer, lines, lookupUrl, allowUnavailable = false) => ({
         if(result.available < 1 && !allowUnavailable) return;
         const line = this.lines.find(line => Number(line.product_variant_id) === result.id);
         if(line) line.quantity = String(Number(line.quantity) + 1);
-        else if(this.lines.length < 100) this.lines.push({product_variant_id:result.id,label:result.label,quantity:'1',unit_price:result.unit_price,discount_amount:'0.00'});
+        else if(this.lines.length < 100) this.lines.push({product_variant_id:result.id,label:result.label,name:result.name,variant:result.variant,sku:result.sku,quantity:'1',unit_price:result.unit_price,discount_amount:'0.00'});
     },
 });
 window.purchaseForm = (supplier, lines, lookupUrl) => ({
