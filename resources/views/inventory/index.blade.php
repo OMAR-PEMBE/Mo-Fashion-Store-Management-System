@@ -1,21 +1,78 @@
+@php
+    $canHistory = auth()->user()->can('inventory.adjust');
+    $level = function ($variant) {
+        $available = $variant->inventory?->available_quantity;
+        return match (true) {
+            $available === null => ['Balance missing', 'danger'],
+            $available <= 0 => ['Out of stock', 'danger'],
+            $available <= $variant->low_stock_threshold => ['Running low', 'warning'],
+            default => ['In stock', 'success'],
+        };
+    };
+@endphp
 <x-layouts.app title="Inventory">
-    <h1 class="text-3xl font-bold">Inventory</h1><p class="mb-7 mt-3 text-sm text-text-secondary">Available stock is physical stock minus reserved stock.</p>
-    <form method="GET" class="mb-6 flex flex-wrap items-end gap-4 rounded-xl border border-border bg-surface p-5">
-        <div class="min-w-0 flex-1"><x-input name="q" label="Search" :value="$filters['q'] ?? ''" placeholder="Product name or SKU" maxlength="191" /></div>
-        <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="low_stock" value="1" @checked($filters['low_stock'] ?? false)> Low stock only</label>
-        <x-button type="submit" variant="secondary">Filter</x-button><a href="{{ route('inventory.index') }}" class="py-3 text-sm underline">Clear</a>
+    <x-page-header title="Inventory" description="Ready to sell = in the shop minus what is held for confirmed orders. Items run low when they reach their restock level." />
+
+    <form method="GET" class="mb-4" role="search">
+        @if($filters['stock'] ?? null)<input type="hidden" name="stock" value="{{ $filters['stock'] }}">@endif
+        <label for="inventory-search" class="sr-only">Search stock by product name or code</label>
+        <div class="relative max-w-md">
+            <svg class="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="inventory-search" name="q" type="search" value="{{ $filters['q'] ?? '' }}" maxlength="191" placeholder="Product name or code" class="min-h-11 w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-11 text-sm">
+        </div>
     </form>
-    <div class="overflow-hidden rounded-xl border border-border bg-surface">
-        @if($variants->isEmpty())<div class="p-10 text-center"><h2 class="font-semibold">No inventory items found</h2><p class="mt-2 text-sm text-text-secondary">Add product variants or change your filters.</p></div>
-        @else<div class="relative overflow-x-auto"><table class="w-full min-w-[700px] text-left text-sm"><caption class="sr-only">Stock by product variant</caption><thead class="border-b border-border bg-background"><tr>@foreach(['Product / SKU', 'Size / Colour', 'Physical', 'Reserved', 'Available', 'Stock level'] as $heading)<th scope="col" class="px-5 py-4 font-medium">{{ $heading }}</th>@endforeach @can('inventory.adjust')<th scope="col" class="px-5 py-4 font-medium">History</th>@endcan</tr></thead>
-        <tbody class="divide-y divide-border">@foreach($variants as $variant)<tr>
-            <th scope="row" class="min-w-40 max-w-xs break-words px-5 py-4 font-medium">{{ $variant->product->name }}<span class="mt-1 block break-all text-xs text-text-secondary">{{ $variant->sku }}</span>@if($variant->trashed() || $variant->product->trashed())<span class="block text-xs text-warning">Archived</span>@elseif(!$variant->is_active || !$variant->product->is_active)<span class="block text-xs text-warning">Inactive</span>@endif</th>
-            <td class="px-5 py-4">{{ $variant->size?->name ?? 'One size' }} / {{ $variant->colour?->name ?? 'No colour' }}</td>
-            @if($variant->inventory)
-                <td class="px-5 py-4">{{ $variant->inventory->physical_quantity }}</td><td class="px-5 py-4">{{ $variant->inventory->reserved_quantity }}</td><td class="px-5 py-4 font-semibold">{{ $variant->inventory->available_quantity }}</td>
-                <td class="px-5 py-4"><x-badge :tone="$variant->inventory->available_quantity <= $variant->low_stock_threshold ? 'warning' : 'success'">{{ $variant->inventory->available_quantity === 0 ? 'Out of stock' : ($variant->inventory->available_quantity <= $variant->low_stock_threshold ? 'Low stock' : 'In stock') }}</x-badge></td>
-            @else<td colspan="4" class="px-5 py-4 text-danger">Balance unavailable. Contact your administrator.</td>@endif
-            @can('inventory.adjust')<td class="px-5 py-4"><a href="{{ route('inventory.movements', $variant) }}" class="inline-flex min-h-11 items-center underline" aria-label="Movements for {{ $variant->sku }}">Movements</a></td>@endcan
-        </tr>@endforeach</tbody></table></div><div class="border-t border-border p-5">{{ $variants->links() }}</div>@endif
+    <x-filter-tabs :options="['' => 'All items', 'low' => 'Needs restock', 'out' => 'Out of stock']" :counts="$counts" param="stock" label="Filter by stock level" class="mb-5" />
+
+    <div class="overflow-hidden rounded-2xl border border-border bg-surface">
+        @if($variants->isEmpty())
+            <div class="p-10 text-center">
+                <p class="font-semibold">{{ ($filters['stock'] ?? null) === 'low' ? 'Nothing needs restocking.' : (($filters['stock'] ?? null) === 'out' ? 'Nothing is out of stock.' : 'No stock items found.') }}</p>
+                <p class="mt-1 text-sm text-text-secondary">{{ ($filters['q'] ?? null) ? 'Try another name or code.' : 'Stock appears here once products have variants.' }}</p>
+            </div>
+        @else
+            <ul class="divide-y divide-border sm:hidden">
+                @foreach($variants as $variant)
+                    @php [$label, $tone] = $level($variant); @endphp
+                    <li class="relative px-4 py-4 hover:bg-selected/50">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                @if($canHistory)<a href="{{ route('inventory.movements', $variant) }}" class="row-link break-words">{{ $variant->product->name }}</a>@else<p class="font-semibold break-words">{{ $variant->product->name }}</p>@endif
+                                <p class="text-xs text-text-secondary">{{ collect([$variant->size?->name, $variant->colour?->name, $variant->sku])->filter()->join(' · ') }}</p>
+                                @if($variant->inventory)<p class="text-xs text-text-secondary">{{ $variant->inventory->physical_quantity }} in the shop · {{ $variant->inventory->reserved_quantity }} held</p>@endif
+                            </div>
+                            <div class="shrink-0 text-right"><p class="text-lg font-bold tabular-nums">{{ $variant->inventory?->available_quantity ?? '?' }}</p><x-badge :tone="$tone">{{ $label }}</x-badge></div>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+            <div class="hidden overflow-x-auto sm:block">
+                <table class="data-table">
+                    <caption class="sr-only">Stock by item</caption>
+                    <thead><tr><th scope="col">Item</th><th scope="col" class="num">Ready to sell</th><th scope="col" class="num">In the shop</th><th scope="col" class="num">Held for orders</th><th scope="col" class="num">Restock at</th><th scope="col">Level</th></tr></thead>
+                    <tbody>
+                        @foreach($variants as $variant)
+                            @php [$label, $tone] = $level($variant); @endphp
+                            <tr>
+                                <th scope="row" class="font-normal">
+                                    @if($canHistory)<a href="{{ route('inventory.movements', $variant) }}" class="row-link break-words" aria-label="Stock history for {{ $variant->product->name }} {{ $variant->sku }}">{{ $variant->product->name }}</a>@else<span class="font-semibold break-words">{{ $variant->product->name }}</span>@endif
+                                    <span class="block text-xs text-text-secondary">{{ collect([$variant->size?->name, $variant->colour?->name, $variant->sku])->filter()->join(' · ') }}@if($variant->trashed() || $variant->product->trashed()) · Archived @elseif(! $variant->is_active || ! $variant->product->is_active) · Inactive @endif</span>
+                                </th>
+                                @if($variant->inventory)
+                                    <td class="num text-base font-bold">{{ number_format($variant->inventory->available_quantity) }}</td>
+                                    <td class="num">{{ number_format($variant->inventory->physical_quantity) }}</td>
+                                    <td class="num">{{ number_format($variant->inventory->reserved_quantity) }}</td>
+                                @else
+                                    <td colspan="3" class="text-danger">Balance missing. Tell an administrator.</td>
+                                @endif
+                                <td class="num text-text-secondary">{{ $variant->low_stock_threshold }}</td>
+                                <td><x-badge :tone="$tone">{{ $label }}</x-badge></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+        @if($variants->hasPages())<div class="border-t border-border p-4">{{ $variants->links() }}</div>@endif
     </div>
+    @if($canHistory)<p class="mt-3 text-xs text-text-secondary">Open an item to see every stock change and what caused it.</p>@endif
 </x-layouts.app>

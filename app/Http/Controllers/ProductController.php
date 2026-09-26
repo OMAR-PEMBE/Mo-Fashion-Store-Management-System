@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Inventory;
 use App\Models\Product;
 use App\Services\ProductCatalogueService;
 use Illuminate\Http\RedirectResponse;
@@ -37,7 +38,14 @@ class ProductController extends Controller
         if ($category = $filters['category_id'] ?? null) {
             $query->where('category_id', $category);
         }
-        $products = $query->orderBy('name')->orderBy('id')->paginate(15)->withQueryString();
+        // Options, price range and ready-to-sell units per product, computed in the same query.
+        $visibleVariants = fn ($q) => $canManage ? $q : $q->available();
+        $products = $query->select('products.*')
+            ->withCount(['variants' => $visibleVariants])->withMin(['variants' => $visibleVariants], 'selling_price')->withMax(['variants' => $visibleVariants], 'selling_price')
+            ->addSelect(['ready_units' => Inventory::query()->selectRaw('COALESCE(SUM(inventories.physical_quantity - inventories.reserved_quantity), 0)')
+                ->join('product_variants', 'product_variants.id', '=', 'inventories.product_variant_id')
+                ->whereColumn('product_variants.product_id', 'products.id')->whereNull('product_variants.deleted_at')])
+            ->orderBy('name')->orderBy('id')->paginate(15)->withQueryString();
         $categories = Category::when(! $canManage, fn ($q) => $q->where('is_active', true))->orderBy('name')->get();
 
         return view('products.index', compact('products', 'categories', 'filters'));
@@ -62,7 +70,7 @@ class ProductController extends Controller
     {
         Gate::authorize('view', $product);
         $filters = $request->validate(['variant_status' => ['nullable', Rule::in(['active', 'inactive', 'archived'])]]);
-        $query = $product->variants()->with(['size', 'colour']);
+        $query = $product->variants()->with(['size', 'colour', 'inventory']);
         if (! $request->user()->can('products.update')) {
             $query->available();
         } elseif (($filters['variant_status'] ?? '') === 'archived') {

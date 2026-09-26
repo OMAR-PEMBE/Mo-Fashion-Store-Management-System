@@ -219,10 +219,10 @@ class InventoryTest extends TestCase
         } catch (AuthorizationException) {
             $this->balance(0, 0);
         }
-        $this->actingAs($this->admin)->get('/inventory/'.$this->variant->id.'/movements')->assertOk()->assertSee('No stock movements');
+        $this->actingAs($this->admin)->get('/inventory/'.$this->variant->id.'/movements')->assertOk()->assertSee('No stock changes recorded');
         $this->service->increase($this->variant, 10, Type::Purchase, $this->context('in'));
         $this->get('/inventory?low_stock=1')->assertDontSee('TEST-SKU');
-        $this->get('/inventory/'.$this->variant->id.'/movements')->assertSee('PURCHASE');
+        $this->get('/inventory/'.$this->variant->id.'/movements')->assertSee('Received from supplier');
     }
 
     public function test_archived_stock_remains_visible_to_admin_and_can_release_existing_reservations(): void

@@ -26,9 +26,15 @@ class ProductVariantController extends Controller
     public function store(Request $request, Product $product, ProductCatalogueService $service): RedirectResponse
     {
         Gate::authorize('update', $product);
-        $service->saveVariant($product, $request->all(), actor: $request->user());
+        $variant = $service->saveVariant($product, $request->all(), actor: $request->user());
+        $label = collect([$variant->size?->name, $variant->colour?->name])->filter()->join(' · ') ?: $variant->sku;
+        // "Save and add another" keeps the owner on the form with the same price and colour ready for the next size.
+        if ($request->boolean('add_another')) {
+            return redirect()->route('variants.create', $product)->withInput($request->only('selling_price', 'low_stock_threshold', 'colour_id'))
+                ->with('status', $label.' added. Add the next size or colour. No stock has been added yet.');
+        }
 
-        return redirect()->route('products.show', $product)->with('status', 'Variant created. No stock has been added.');
+        return redirect()->route('products.show', $product)->with('status', $label.' added. No stock has been added yet; receive stock through a purchase or opening stock.');
     }
 
     public function edit(Product $product, int $variant): View

@@ -94,3 +94,26 @@ after any action.
 - Approval and settlement dialogs use one-tap methods with nothing preselected.
 - Shared building blocks added: `<x-workflow>` (also used by Orders now; finished
   workflows show every step ticked), `<x-next-step>`, `<x-sale-picker>`, `RecentSales`.
+
+## Stock: inventory and products
+
+**Found:** "Out of stock" shown in the amber warning colour; a checkbox plus button to see
+low stock; items sorted by code; stock history with raw codes (`RESERVATION RELEASE`),
+references like `sale #12` and before/after columns for two quantities. The product
+list had no stock, option count or price range and a separate "View" column; the product
+page listed options by code without their stock; inactive items used the warning colour;
+the option form used dropdowns and a status select, one option at a time.
+
+**Changed:**
+- Inventory: All items / Needs restock / Out of stock tabs with counts (the dashboard's
+  "View stock" goes straight to Needs restock), sorted by product name, "Ready to sell /
+  In the shop / Held for orders / Restock at" in plain words, red for out of stock.
+- Stock history: plain movement names ("Received from supplier", "Held for an order"),
+  the real document number linked (MFS-SAL-000009, MFS-PUR-…), a green + / red − change
+  and the before → after count only where it changed.
+- Products: price range, number of size/colour options and units ready to sell per
+  product (computed in the same query); category and status filters apply immediately.
+- Product page: options named by size and colour, with price, ready-to-sell count and
+  Low / Out badges; archiving moved into a calm "Stop selling this product" panel.
+- Forms: sizes and colours as tap chips, plain "Available for sale" switches, and
+  **Save and add another**, which keeps the price and colour for the next size.

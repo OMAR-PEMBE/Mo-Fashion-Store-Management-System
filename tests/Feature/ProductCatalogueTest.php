@@ -124,7 +124,7 @@ class ProductCatalogueTest extends TestCase
     {
         $product = $this->product();
         $this->get('/products/'.$product->id.'/variants/create')->assertOk()
-            ->assertSee('Blue')->assertSee('Manage colours')->assertSee('Generated when you save');
+            ->assertSee('Blue')->assertSee('Missing a colour? Add it')->assertSee('Created automatically');
         $data = $this->variantData(['sku' => ' ', 'size_id' => $size ? $this->size->id : null, 'colour_id' => $colour ? $this->colour->id : null]);
         $this->post('/products/'.$product->id.'/variants', $data)->assertSessionHasNoErrors();
         $variant = ProductVariant::firstOrFail();
@@ -232,7 +232,7 @@ class ProductCatalogueTest extends TestCase
         $salesperson = User::factory()->create(['role_id' => Role::where('slug', 'salesperson')->value('id')]);
         $this->actingAs($salesperson);
         $this->get('/products')->assertOk()->assertSee('Boyfriend Jeans')->assertDontSee('Add product');
-        $this->get('/products/'.$product->id)->assertOk()->assertDontSee('Average cost')->assertDontSee('12345.67')->assertDontSee('Add variant');
+        $this->get('/products/'.$product->id)->assertOk()->assertDontSee('Average cost')->assertDontSee('12345.67')->assertDontSee('Add size or colour');
         $this->assertArrayNotHasKey('weighted_average_cost', $variant->toArray());
         foreach (['/products/create', '/products/'.$product->id.'/edit', '/products/'.$product->id.'/variants/create', '/products/'.$product->id.'/variants/'.$variant->id.'/edit'] as $path) {
             $this->get($path)->assertForbidden();
@@ -297,7 +297,7 @@ class ProductCatalogueTest extends TestCase
 
     public function test_search_filter_pagination_and_output_escaping(): void
     {
-        $this->get('/products')->assertSee('No products found');
+        $this->get('/products')->assertSee('No products yet.');
         for ($i = 1; $i <= 16; $i++) {
             $this->product(['name' => sprintf('Product %02d', $i), 'product_code' => 'P-'.$i]);
         }
@@ -306,7 +306,7 @@ class ProductCatalogueTest extends TestCase
         $product = $this->product(['name' => '<script>alert(1)</script>']);
         app(ProductCatalogueService::class)->saveVariant($product, $this->variantData());
         $this->get('/products?q=JEANS-BLUE-M')->assertSee('&lt;script&gt;', false)->assertDontSee('<script>alert(1)</script>', false);
-        $this->get('/products?category_id=99999')->assertSee('No products found');
+        $this->get('/products?category_id=99999')->assertSee('No products match these filters.');
     }
 
     public function test_product_writes_require_csrf(): void
@@ -420,7 +420,7 @@ class ProductCatalogueTest extends TestCase
             DB::table('role_permissions')->insertOrIgnore(['role_id' => $salesperson->role_id, 'permission_id' => Permission::where('slug', $permission)->value('id')]);
         }
         $this->actingAs($salesperson);
-        $this->get('/products/'.$product->id)->assertOk()->assertDontSee('Add variant')->assertDontSee('Edit variant');
+        $this->get('/products/'.$product->id)->assertOk()->assertDontSee('Add size or colour')->assertDontSee('Edit variant');
         $this->get('/products/'.$product->id.'/variants/'.$variant->id.'/edit')->assertForbidden();
         $this->put('/products/'.$product->id.'/variants/'.$variant->id, $this->variantData(['selling_price' => '1']))->assertForbidden();
         $this->put('/products/'.$product->id, $this->productData(['name' => 'Changed']))->assertForbidden();

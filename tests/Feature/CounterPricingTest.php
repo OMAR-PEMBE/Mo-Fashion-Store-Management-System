@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Colour;
 use App\Models\Inventory;
 use App\Models\ProductVariant;
 use App\Models\Role;
 use App\Models\Sale;
+use App\Models\Size;
 use App\Models\User;
 use App\Services\CustomerService;
 use App\Services\OpeningStockService;
@@ -129,6 +131,18 @@ class CounterPricingTest extends TestCase
 
         $customer->forceFill(['is_active' => false])->save();
         $this->get($link)->assertOk()->assertViewHas('selectedCustomer', fn ($selected) => $selected['id'] === '');
+    }
+
+    public function test_save_and_add_another_keeps_price_and_colour_for_the_next_size(): void
+    {
+        $product = $this->variant->product;
+        $colour = Colour::firstOrFail();
+        $size = Size::where('code', 'L')->firstOrFail();
+        $this->actingAs($this->admin)->post(route('variants.store', $product), ['selling_price' => '47000', 'low_stock_threshold' => 3, 'is_active' => 1,
+            'size_id' => $size->id, 'colour_id' => $colour->id, 'add_another' => 1])
+            ->assertRedirect(route('variants.create', $product))->assertSessionHasInput('colour_id', $colour->id)->assertSessionHasInput('selling_price', '47000')
+            ->assertSessionHas('status', fn ($message) => str_contains($message, 'L · '.$colour->name.' added'));
+        $this->assertDatabaseHas('product_variants', ['product_id' => $product->id, 'size_id' => $size->id, 'colour_id' => $colour->id, 'selling_price' => '47000.00']);
     }
 
     public function test_counter_screen_gets_product_details_and_can_register_customers_inline(): void

@@ -214,7 +214,7 @@ class DashboardTest extends TestCase
             ->assertSeeInOrder(['1 out of stock · 1 running low', 'Scarf', 'Out of stock', 'Belt · M', '2 left'])
             ->assertSee('1 new order waiting for confirmation')->assertSee(route('orders.show', $order), false)
             ->assertSee('1 refund waiting for approval')->assertSee('1 return waiting for approval')
-            ->assertSee(route('inventory.index', ['low_stock' => 1]), false);
+            ->assertSee(route('inventory.index', ['stock' => 'low']), false);
 
         // Staff see stock alerts, but not refunds they cannot approve or work on other people's sales and orders.
         $attention = app(DashboardService::class)->overview($staff)['attention'];

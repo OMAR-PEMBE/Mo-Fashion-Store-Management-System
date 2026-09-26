@@ -1,10 +1,57 @@
-<x-layouts.app title="Inventory movements">
-    <a href="{{ route('inventory.index') }}" class="mb-5 inline-block text-sm underline">Back to inventory</a>
-    <h1 class="text-3xl font-bold">Inventory movements</h1><p class="mb-7 mt-3 break-words text-sm text-text-secondary">{{ $variant->product->name }} · {{ $variant->sku }}</p>
-    @if($variant->inventory)<x-card class="mb-6"><dl class="grid grid-cols-3 gap-4 text-sm">@foreach(['physical_quantity' => 'Physical', 'reserved_quantity' => 'Reserved', 'available_quantity' => 'Available'] as $field => $label)<div><dt class="text-text-secondary">{{ $label }}</dt><dd class="mt-2 text-xl font-bold">{{ $variant->inventory->$field }}</dd></div>@endforeach</dl></x-card>@endif
-    <div class="overflow-hidden rounded-xl border border-border bg-surface">
-        @if($movements->isEmpty())<p class="p-10 text-center text-sm text-text-secondary">No stock movements recorded for this variant.</p>
-        @else<div class="relative overflow-x-auto"><table class="w-full min-w-[700px] text-left text-sm"><caption class="sr-only">Permanent stock movement ledger</caption><thead class="border-b border-border bg-background"><tr>@foreach(['When / Who', 'Movement', 'Physical change', 'Physical before → after', 'Reserved before → after', 'Reference / Reason'] as $heading)<th scope="col" class="px-5 py-4 font-medium">{{ $heading }}</th>@endforeach</tr></thead>
-        <tbody class="divide-y divide-border">@foreach($movements as $movement)<tr><td class="whitespace-nowrap px-5 py-4">{{ $movement->created_at->format('d M Y H:i') }}<span class="mt-1 block text-xs text-text-secondary">{{ $movement->actor->name }}</span></td><td class="px-5 py-4">{{ str_replace('_', ' ', $movement->movement_type->value) }}</td><td class="px-5 py-4">{{ $movement->quantity_change > 0 ? '+' : '' }}{{ $movement->quantity_change }}</td><td class="px-5 py-4">{{ $movement->physical_quantity_before }} → {{ $movement->physical_quantity_after }}</td><td class="px-5 py-4">{{ $movement->reserved_quantity_before }} → {{ $movement->reserved_quantity_after }}</td><td class="min-w-40 max-w-xs break-words px-5 py-4">{{ $movement->reference_type }} #{{ $movement->reference_id }}@if($movement->reason)<p class="mt-1 text-xs">{{ $movement->reason }}</p>@endif @if($movement->notes)<p class="mt-1 text-xs text-text-secondary">{{ $movement->notes }}</p>@endif</td></tr>@endforeach</tbody></table></div><div class="border-t border-border p-5">{{ $movements->links() }}</div>@endif
+@php
+    $types = [
+        'OPENING_BALANCE' => 'Opening stock', 'PURCHASE' => 'Received from supplier', 'SALE' => 'Sold', 'RESERVATION' => 'Held for an order',
+        'RESERVATION_RELEASE' => 'Order hold released', 'RETURN' => 'Returned by customer', 'EXCHANGE_IN' => 'Came back in an exchange',
+        'EXCHANGE_OUT' => 'Went out in an exchange', 'DAMAGE' => 'Written off as damaged', 'LOSS' => 'Written off as lost',
+        'ADJUSTMENT_IN' => 'Count corrected up', 'ADJUSTMENT_OUT' => 'Count corrected down', 'REVERSAL' => 'Reversal',
+    ];
+    $sources = ['sale' => 'Sale', 'order' => 'Order', 'purchase' => 'Purchase', 'return' => 'Return', 'exchange' => 'Exchange', 'opening_stock' => 'Opening stock'];
+    $variantLabel = collect([$variant->size?->name, $variant->colour?->name, $variant->sku])->filter()->join(' · ');
+@endphp
+<x-layouts.app title="Stock history">
+    <x-page-header :title="$variant->product->name" :back="route('inventory.index')" back-label="Inventory" :description="$variantLabel.' · every stock change, newest first'" />
+
+    @if($variant->inventory)
+        <dl class="mb-6 grid grid-cols-3 gap-3">
+            <div class="rounded-2xl border border-border bg-surface p-5"><dt class="text-sm text-text-secondary">Ready to sell</dt><dd class="mt-1 text-2xl font-bold tabular-nums">{{ number_format($variant->inventory->available_quantity) }}</dd></div>
+            <div class="rounded-2xl border border-border bg-surface p-5"><dt class="text-sm text-text-secondary">In the shop</dt><dd class="mt-1 text-2xl font-bold tabular-nums">{{ number_format($variant->inventory->physical_quantity) }}</dd></div>
+            <div class="rounded-2xl border border-border bg-surface p-5"><dt class="text-sm text-text-secondary">Held for orders</dt><dd class="mt-1 text-2xl font-bold tabular-nums">{{ number_format($variant->inventory->reserved_quantity) }}</dd></div>
+        </dl>
+    @endif
+
+    <div class="overflow-hidden rounded-2xl border border-border bg-surface">
+        @if($movements->isEmpty())
+            <p class="p-10 text-center text-sm text-text-secondary">No stock changes recorded for this item yet.</p>
+        @else
+            <ol class="divide-y divide-border">
+                @foreach($movements as $movement)
+                    @php
+                        $reference = $references[$movement->reference_type][$movement->reference_id] ?? null;
+                        $change = $movement->quantity_change;
+                        $reservedChanged = $movement->reserved_quantity_before !== $movement->reserved_quantity_after;
+                    @endphp
+                    <li class="flex flex-wrap items-start justify-between gap-4 px-5 py-4 text-sm">
+                        <div class="min-w-0">
+                            <p class="font-semibold">{{ $types[$movement->movement_type->value] ?? ucfirst(strtolower(str_replace('_', ' ', $movement->movement_type->value))) }}</p>
+                            <p class="text-xs text-text-secondary">
+                                {{ $movement->created_at->format('j M Y, H:i') }} · {{ $movement->actor->name }} ·
+                                @if($reference)<a href="{{ $reference['url'] }}" class="font-semibold text-text-primary underline underline-offset-4">{{ $reference['number'] }}</a>
+                                @else{{ $sources[$movement->reference_type] ?? ucfirst(str_replace('_', ' ', (string) $movement->reference_type)) }}@endif
+                            </p>
+                            @if($movement->reason)<p class="mt-1 text-xs break-words">{{ $movement->reason }}</p>@endif
+                            @if($movement->notes)<p class="mt-1 text-xs break-words text-text-secondary">{{ $movement->notes }}</p>@endif
+                        </div>
+                        <div class="shrink-0 text-right">
+                            @if($change !== 0)
+                                <p @class(['text-lg font-bold tabular-nums', 'text-success' => $change > 0, 'text-danger' => $change < 0])>{{ $change > 0 ? '+' : '' }}{{ $change }}</p>
+                                <p class="text-xs text-text-secondary">in the shop {{ $movement->physical_quantity_before }} → {{ $movement->physical_quantity_after }}</p>
+                            @endif
+                            @if($reservedChanged)<p class="text-xs text-text-secondary">held {{ $movement->reserved_quantity_before }} → {{ $movement->reserved_quantity_after }}</p>@endif
+                        </div>
+                    </li>
+                @endforeach
+            </ol>
+        @endif
+        @if($movements->hasPages())<div class="border-t border-border p-4">{{ $movements->links() }}</div>@endif
     </div>
 </x-layouts.app>

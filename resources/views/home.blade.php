@@ -117,7 +117,7 @@
                                 <svg @class(['size-5 shrink-0', 'text-danger' => $a['outCount'] > 0, 'text-warning' => $a['outCount'] === 0]) viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg>
                                 {{ collect([$a['outCount'] ? $a['outCount'].' out of stock' : null, $a['lowCount'] ? $a['lowCount'].' running low' : null])->filter()->join(' · ') }}
                             </p>
-                            <a href="{{ route('inventory.index', ['low_stock' => 1]) }}" class="text-sm font-semibold underline underline-offset-4">View stock</a>
+                            <a href="{{ route('inventory.index', ['stock' => 'low']) }}" class="text-sm font-semibold underline underline-offset-4">View stock</a>
                         </div>
                         <ul class="mt-3 grid gap-2 pl-8 text-sm sm:grid-cols-2">
                             @foreach($a['stock'] as $item)
