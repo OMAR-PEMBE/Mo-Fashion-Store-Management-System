@@ -2,14 +2,20 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatus;
+use App\Enums\RefundStatus;
+use App\Enums\ReturnStatus;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\ProductVariant;
+use App\Models\Refund;
 use App\Models\Sale;
+use App\Models\SaleReturn;
 use App\Models\User;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
@@ -20,7 +26,7 @@ class DashboardService
         abort_unless($actor?->canAccessWorkspace(), 403);
         $now = CarbonImmutable::now(config('app.timezone'));
         $permissions = [];
-        foreach (['sales.create', 'sales.view_all', 'orders.create', 'orders.manage', 'customers.manage', 'customers.create', 'inventory.view', 'reports.view', 'products.view_cost', 'expenses.view'] as $permission) {
+        foreach (['sales.create', 'sales.view_all', 'orders.create', 'orders.manage', 'customers.manage', 'customers.create', 'inventory.view', 'reports.view', 'products.view_cost', 'expenses.view', 'returns.approve', 'refunds.approve'] as $permission) {
             $permissions[$permission] = $actor->hasPermission($permission);
         }
         $finance = $permissions['reports.view'] && $permissions['products.view_cost'] && $permissions['expenses.view'] && $permissions['sales.view_all'] && $permissions['sales.create'];
@@ -62,8 +68,10 @@ class DashboardService
                     ->join('products', 'products.id', '=', 'product_variants.product_id');
                 $products = (clone $lines)->select('products.id', 'products.name')->selectRaw('SUM(sold.units) AS units')
                     ->groupBy('products.id', 'products.name')->orderByDesc('units')->orderBy('products.id')->limit(5)->get();
-                $variants = (clone $lines)->select('product_variants.id', 'product_variants.sku', 'sold.units')
-                    ->orderByDesc('units')->orderBy('product_variants.id')->limit(5)->get();
+                $variants = (clone $lines)->leftJoin('sizes', 'sizes.id', '=', 'product_variants.size_id')->leftJoin('colours', 'colours.id', '=', 'product_variants.colour_id')
+                    ->select('product_variants.id', 'product_variants.sku', 'sold.units', 'products.name as product_name', 'sizes.name as size_name', 'colours.name as colour_name')
+                    ->orderByDesc('units')->orderBy('product_variants.id')->limit(5)->get()
+                    ->each(fn ($row) => $row->label = $this->variantLabel($row->product_name, $row->size_name, $row->colour_name));
             }
             $customers = collect();
             if ($finance && $permissions['customers.manage'] && $permissions['customers.create']) {
@@ -75,9 +83,44 @@ class DashboardService
 
             return ['asOf' => $now, 'periods' => $periods, 'stock' => $stock, 'allSales' => $permissions['sales.view_all'],
                 'topProducts' => $products, 'topVariants' => $variants, 'topCustomers' => $customers,
-                'recentSales' => $permissions['sales.create'] ? (clone $sales)->orderByDesc('completed_at')->orderByDesc('id')->limit(5)->get(['id', 'sale_number', 'total_amount', 'completed_at']) : collect(),
-                'recentOrders' => $permissions['orders.create'] ? (clone $orders)->orderByDesc('created_at')->orderByDesc('id')->limit(5)->get(['id', 'order_number', 'status', 'total_amount', 'created_at']) : collect()];
+                'recentSales' => $permissions['sales.create'] ? (clone $sales)->with(['customer' => fn ($q) => $q->withTrashed()->select('id', 'full_name'), 'salesperson:id,name'])->orderByDesc('completed_at')->orderByDesc('id')->limit(5)
+                    ->get(['id', 'sale_number', 'total_amount', 'completed_at', 'customer_id', 'salesperson_id']) : collect(),
+                'recentOrders' => $permissions['orders.create'] ? (clone $orders)->with(['customer' => fn ($q) => $q->withTrashed()->select('id', 'full_name')])->orderByDesc('created_at')->orderByDesc('id')->limit(5)
+                    ->get(['id', 'order_number', 'status', 'total_amount', 'created_at', 'customer_id']) : collect(),
+                'attention' => $this->attention($actor, $permissions, $orders, $stock)];
         });
+    }
+
+    /** Work waiting on this user, using the same visibility rules as the matching list pages. */
+    private function attention(User $actor, array $permissions, Builder $orders, ?array $stock): array
+    {
+        $ownSales = fn ($q) => $permissions['sales.view_all'] ? $q : $q->whereHas('sale', fn ($q) => $q->where('salesperson_id', $actor->id));
+        $items = collect();
+        if ($stock !== null && $stock['low'] + $stock['out'] > 0) {
+            $items = ProductVariant::available()->whereHas('product', fn ($q) => $q->available()->whereNull('deleted_at'))
+                ->join('inventories', 'inventories.product_variant_id', '=', 'product_variants.id')
+                ->whereRaw('inventories.physical_quantity - inventories.reserved_quantity <= product_variants.low_stock_threshold')
+                ->with(['product:id,name', 'size:id,name', 'colour:id,name'])
+                ->select('product_variants.*')->selectRaw('inventories.physical_quantity - inventories.reserved_quantity AS available_units')
+                ->orderBy('available_units')->orderBy('product_variants.id')->limit(5)->get()
+                ->map(fn ($v) => ['label' => $this->variantLabel($v->product->name, $v->size?->name, $v->colour?->name), 'available' => (int) $v->available_units]);
+        }
+        $newOrders = $permissions['orders.create'] ? (clone $orders)->where('status', OrderStatus::New)->orderBy('id')->pluck('id') : collect();
+
+        return [
+            'stock' => $items,
+            'lowCount' => $stock['low'] ?? 0,
+            'outCount' => $stock['out'] ?? 0,
+            'newOrders' => $newOrders->count(),
+            'firstNewOrder' => $newOrders->first(),
+            'pendingReturns' => $permissions['returns.approve'] ? $ownSales(SaleReturn::where('status', ReturnStatus::Pending))->count() : 0,
+            'pendingRefunds' => $permissions['refunds.approve'] ? $ownSales(Refund::where('status', RefundStatus::Pending))->count() : 0,
+        ];
+    }
+
+    private function variantLabel(string $product, ?string $size, ?string $colour): string
+    {
+        return implode(' · ', array_filter([$product, $size, $colour]));
     }
 
     private function money(mixed $value): string

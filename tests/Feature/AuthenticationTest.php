@@ -40,7 +40,7 @@ class AuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->assertNotSame($session, session()->getId());
         $this->assertNotNull($user->fresh()->last_login_at);
-        $this->get('/dashboard')->assertOk()->assertSee('Store overview');
+        $this->get('/dashboard')->assertOk()->assertSee('Needs attention');
         $this->get('/profile')->assertOk()->assertSee($user->email);
     }
 

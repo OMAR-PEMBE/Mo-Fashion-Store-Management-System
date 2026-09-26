@@ -31,4 +31,6 @@
     input, select, textarea { @apply focus-visible:outline-offset-0; }
     button:not(:disabled), summary { cursor: pointer; }
     [x-cloak] { display: none !important; }
+    /* Quiet scrollbar for the dark sidebar navigation. */
+    #main-navigation { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.18) transparent; }
 }

@@ -7,6 +7,7 @@ use App\Models\ExpenseCategory;
 use App\Models\ProductVariant;
 use App\Models\Role;
 use App\Models\Sale;
+use App\Models\Size;
 use App\Models\User;
 use App\Services\CustomerService;
 use App\Services\DashboardService;
@@ -110,7 +111,7 @@ class DashboardTest extends TestCase
         foreach (['returns', 'refunds', 'exchanges'] as $type) {
             $this->get('/reports/'.$type.'?variant=Jeans')->assertOk()->assertViewHas('rows', fn ($rows) => $rows->total() > 0);
         }
-        $this->get('/dashboard')->assertOk()->assertSee('Estimated Net Profit')->assertSee('299.75')->assertSee('How these figures are calculated');
+        $this->get('/dashboard')->assertOk()->assertSee('Profit (estimated)')->assertSee('TZS 299.75')->assertSee('How these figures are calculated');
     }
 
     public function test_local_midnight_month_boundary_and_later_adjustments_use_their_event_date(): void
@@ -147,7 +148,7 @@ class DashboardTest extends TestCase
         $this->assertSame([$mine->id], $data['recentSales']->modelKeys());
         $this->assertEquals(1, $data['topProducts']->first()->units);
         $this->assertArrayNotHasKey('total_cogs', $data['recentSales']->first()->getAttributes());
-        $this->actingAs($staff)->get('/dashboard')->assertOk()->assertDontSee('Estimated Net Profit')->assertDontSee('Operating expenses')->assertDontSee($other->sale_number);
+        $this->actingAs($staff)->get('/dashboard')->assertOk()->assertDontSee('Profit (estimated)')->assertDontSee('Cost of goods sold')->assertDontSee('How these figures are calculated')->assertDontSee($other->sale_number);
         foreach (['reports.view', 'expenses.view', 'products.view_cost', 'sales.view_all'] as $permission) {
             $id = DB::table('permissions')->where('slug', $permission)->value('id');
             DB::table('role_permissions')->where('role_id', $this->admin->role_id)->where('permission_id', $id)->delete();
@@ -185,6 +186,58 @@ class DashboardTest extends TestCase
         $this->assertCount(1, $data['topCustomers']);
         $this->assertSame('200.00', $data['topCustomers'][0]['revenue']);
         $this->get('/dashboard')->assertOk()->assertSee('&lt;script&gt;Customer&lt;/script&gt;', false)->assertDontSee('<script>Customer</script>', false);
+    }
+
+    public function test_needs_attention_shows_each_role_only_the_work_it_can_act_on(): void
+    {
+        $this->get('/dashboard')->assertOk()->assertSee('All clear.');
+        $staff = User::factory()->create(['role_id' => Role::where('slug', 'salesperson')->value('id')]);
+        $size = Size::where('code', 'M')->firstOrFail();
+        $category = Category::firstOrCreate(['slug' => 'fashion'], ['name' => 'Fashion']);
+        $belt = app(ProductCatalogueService::class)->saveVariant(
+            app(ProductCatalogueService::class)->saveProduct(['name' => 'Belt', 'product_code' => 'BELT', 'category_id' => $category->id, 'is_active' => 1], $this->admin),
+            ['selling_price' => '5', 'is_active' => 1, 'low_stock_threshold' => 3, 'size_id' => $size->id], null, $this->admin);
+        app(OpeningStockService::class)->confirm($belt, ['quantity' => 2, 'unit_cost' => '2'], $this->admin);
+        $scarf = $this->variant('Scarf', '5', '2', 1);
+        app(SaleService::class)->completeSale(['request_key' => 'scarf', 'payment_method' => 'CASH',
+            'items' => [['product_variant_id' => $scarf->id, 'quantity' => 1, 'unit_price' => '5']]], $this->admin);
+        $customer = app(CustomerService::class)->save(['full_name' => 'Amina'], $this->admin);
+        $order = app(OrderService::class)->create(['request_key' => 'waiting', 'customer_id' => $customer->id, 'delivery_address' => 'Shop',
+            'items' => [['product_variant_id' => $this->variant->id, 'quantity' => 1, 'unit_price' => '100']]], $this->admin);
+        $sale = $this->sale();
+        app(RefundService::class)->create(['sale_id' => $sale->id, 'request_key' => 'pending-refund', 'reason' => 'Test',
+            'items' => [['sale_item_id' => $sale->items()->first()->id, 'amount' => '10']]], $this->admin);
+        app(ReturnService::class)->create(['sale_id' => $sale->id, 'request_key' => 'pending-return', 'reason' => 'Test', 'proof_type' => 'SALE_RECORD',
+            'items' => [['sale_item_id' => $sale->items()->first()->id, 'quantity' => 1, 'condition' => 'SELLABLE']]], $this->admin);
+
+        $this->get('/dashboard')->assertOk()->assertDontSee('All clear.')
+            ->assertSeeInOrder(['1 out of stock · 1 running low', 'Scarf', 'Out of stock', 'Belt · M', '2 left'])
+            ->assertSee('1 new order waiting for confirmation')->assertSee(route('orders.show', $order), false)
+            ->assertSee('1 refund waiting for approval')->assertSee('1 return waiting for approval')
+            ->assertSee(route('inventory.index', ['low_stock' => 1]), false);
+
+        // Staff see stock alerts, but not refunds they cannot approve or work on other people's sales and orders.
+        $attention = app(DashboardService::class)->overview($staff)['attention'];
+        $this->assertSame([1, 1, 0, 0, 0], [$attention['outCount'], $attention['lowCount'], $attention['newOrders'], $attention['pendingReturns'], $attention['pendingRefunds']]);
+        $this->actingAs($staff)->get('/dashboard')->assertOk()->assertSee('1 out of stock')
+            ->assertDontSee('waiting for confirmation')->assertDontSee('refund waiting')->assertDontSee('return waiting');
+    }
+
+    public function test_dashboard_uses_readable_amounts_names_and_quick_actions(): void
+    {
+        $customer = app(CustomerService::class)->save(['full_name' => 'Grace Mushi'], $this->admin);
+        $this->sale(15, customer: $customer->id);
+        $this->sale(2);
+        $page = $this->get('/dashboard')->assertOk()
+            ->assertSee('TZS 1,700')->assertDontSee('1700.00')
+            ->assertSee('Walk-in customer')->assertSee('Grace Mushi')->assertSee('You')
+            ->assertSee(route('sales.create'), false)->assertSee('New sale')->assertSee('Record expense')
+            ->assertSee('Best sellers this month')->assertSee('Top customers this month')->assertSee('Stock at a glance');
+        $this->assertStringNotContainsString('Loss (estimated)', $page->getContent());
+
+        app(ExpenseService::class)->save(['request_key' => 'big-expense', 'expense_category_id' => ExpenseCategory::first()->id,
+            'amount' => '500000', 'expense_date' => '2026-10-01'], $this->admin);
+        $this->get('/dashboard')->assertOk()->assertSee('Loss so far today')->assertSee('Loss (estimated)')->assertSee('-TZS');
     }
 
     public function test_empty_dashboard_and_guests_are_safe(): void

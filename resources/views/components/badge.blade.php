@@ -4,6 +4,7 @@
         'success' => 'bg-success/10 text-success',
         'warning' => 'bg-warning/20 text-text-primary',
         'danger' => 'bg-danger/10 text-danger',
+        'neutral' => 'bg-zinc-100 text-text-secondary',
         default => 'bg-info/10 text-info',
     };
 @endphp
