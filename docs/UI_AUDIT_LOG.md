@@ -157,3 +157,27 @@ dropdown.
   in the store's own format (SUP-0001 → SUP-0004), and a plain "Still buying from them"
   switch explaining what switching off does.
 - `Phone::international()` now builds tel: and wa.me links for customers and suppliers.
+
+## Stock: opening stock
+
+**Found:** every item took four screens (list → form → review → confirm → back to the
+list), so a shop starting with 200 sizes and colours faced about 800 page loads. Items
+were listed by code, so a product's sizes were split up and sorted L, M, S; there was no
+sense of progress, and the empty state did not say whether you were finished or had no
+products yet.
+
+**Changed:**
+- The list is now a **count sheet**: up to 30 items per page, grouped by product and
+  ordered colour then size (S, M, L), each with a count and a cost-each box. Blank rows
+  are skipped, so you can count part of the shop and come back.
+- A sticky bar shows items entered, units and stock value at cost as you type; "Copy the
+  first cost to the other counted sizes" fills the rest of a product in one tap; leaving
+  the page with unreviewed counts asks first.
+- One review page for the whole sheet, with each line's value and the total, then
+  **Save opening stock**. "Go back and change" returns to the same page with everything
+  still typed in. Saving is all-or-nothing: if one item was counted elsewhere in the
+  meantime, nothing is saved and that line is named.
+- A row with a count but no cost (or the reverse) is highlighted with a plain message.
+- A progress bar ("13 counted · 0 still to count"), and empty states for "Everything is
+  counted" (with a link to Purchases), "No products to count yet" and no search match.
+- The single-item screens remain for old links, restyled to match.

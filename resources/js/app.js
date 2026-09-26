@@ -50,6 +50,40 @@ window.purchaseForm = (supplier, lines, lookupUrl) => ({
     },
 });
 
+// Opening stock count sheet: live totals, "same cost for every size", and a warning before
+// leaving the page with counts that have not been reviewed yet.
+window.openingSheet = () => ({
+    items: 0, units: 0, cents: 0, submitting: false,
+    init() {
+        this.refresh();
+        window.addEventListener('beforeunload', event => {
+            if (this.items > 0 && !this.submitting) event.preventDefault();
+        });
+    },
+    refresh() {
+        let items = 0, units = 0, cents = 0;
+        this.$root.querySelectorAll('[data-qty]').forEach(qty => {
+            const cost = qty.closest('li').querySelector('[data-cost]');
+            const count = parseInt(qty.value, 10);
+            const each = Number(cost.value.trim());
+            if (count > 0 && cost.value.trim() !== '' && Number.isFinite(each) && each >= 0) {
+                items++; units += count; cents += count * Math.round(each * 100);
+            }
+        });
+        Object.assign(this, { items, units, cents });
+    },
+    sameCost(button) {
+        const costs = [...button.closest('[data-group]').querySelectorAll('[data-cost]')];
+        const first = costs.find(input => input.value.trim() !== '');
+        if (!first) { costs[0]?.focus(); return; }
+        // Only sizes with a count: a cost on an uncounted row would read as a half-filled line.
+        costs.forEach(input => {
+            const counted = input.closest('li').querySelector('[data-qty]').value.trim() !== '';
+            if (counted && input.value.trim() === '') input.value = first.value.trim();
+        });
+        this.refresh();
+    },
+});
 // Show/hide toggles for <x-input revealable>. Buttons stay hidden until this script runs.
 document.querySelectorAll('[data-password-toggle]').forEach(button => { button.hidden = false; });
 document.addEventListener('click', event => {

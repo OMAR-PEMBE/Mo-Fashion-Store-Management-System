@@ -100,6 +100,8 @@ Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
     });
     Route::resource('customers', CustomerController::class)->except('destroy')->middleware('can:customers.create');
     Route::get('/opening-stock', [OpeningStockController::class, 'index'])->name('opening-stock.index');
+    Route::post('/opening-stock/review', [OpeningStockController::class, 'sheetReview'])->name('opening-stock.sheet.review');
+    Route::post('/opening-stock/confirm', [OpeningStockController::class, 'sheetConfirm'])->name('opening-stock.sheet.confirm');
     Route::get('/opening-stock/{variant}', [OpeningStockController::class, 'create'])->name('opening-stock.create');
     Route::post('/opening-stock/{variant}/review', [OpeningStockController::class, 'review'])->name('opening-stock.review');
     Route::post('/opening-stock/{variant}/confirm', [OpeningStockController::class, 'confirm'])->name('opening-stock.confirm');

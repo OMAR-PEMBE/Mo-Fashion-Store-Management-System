@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Permission;
 use App\Models\ProductVariant;
 use App\Models\Role;
+use App\Models\Size;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\InventoryService;
@@ -117,5 +118,41 @@ class OpeningStockTest extends TestCase
         $this->assertSame('0.00', $this->variant->fresh()->weighted_average_cost);
         $this->app['env'] = 'local';
         $this->post('/opening-stock/'.$this->variant->id.'/confirm', ['quantity' => 1, 'unit_cost' => '0'])->assertStatus(419);
+    }
+
+    public function test_count_sheet_reviews_and_saves_many_items_all_or_nothing(): void
+    {
+        $second = app(ProductCatalogueService::class)->saveVariant($this->variant->product, ['sku' => 'JEANS-L', 'size_id' => Size::where('code', 'L')->value('id'), 'selling_price' => '47000', 'is_active' => 1, 'low_stock_threshold' => 2]);
+        $third = app(ProductCatalogueService::class)->saveVariant($this->variant->product, ['sku' => 'JEANS-XL', 'size_id' => Size::where('code', 'XL')->value('id'), 'selling_price' => '47000', 'is_active' => 1, 'low_stock_threshold' => 2]);
+        $this->get('/opening-stock')->assertOk()->assertSee('JEANS-L')->assertViewHas('counted', 0)->assertSee('openingSheet()', false);
+
+        // A row with only a count is caught; blank rows are simply skipped.
+        $this->from('/opening-stock')->post('/opening-stock/review', ['items' => [$this->variant->id => ['quantity' => '4', 'unit_cost' => '']]])
+            ->assertRedirect('/opening-stock')->assertSessionHasErrors('items.'.$this->variant->id.'.unit_cost')->assertSessionHasInput('items');
+        $this->from('/opening-stock')->post('/opening-stock/review', ['items' => [$third->id => ['quantity' => '', 'unit_cost' => '']]])->assertSessionHasErrors('items');
+
+        $items = [$this->variant->id => ['quantity' => '4', 'unit_cost' => '25000'], $second->id => ['quantity' => '2', 'unit_cost' => '26000.5'], $third->id => ['quantity' => '', 'unit_cost' => '']];
+        $this->post('/opening-stock/review', ['items' => $items, 'page' => 2])->assertOk()->assertSee('Check these counts')->assertSee('TZS 152,001')
+            ->assertSee('name="items['.$second->id.'][unit_cost]" value="26000.50"', false)->assertDontSee('JEANS-XL');
+        $this->assertDatabaseCount('inventory_movements', 0);
+        $this->post('/opening-stock/confirm', ['items' => $items, 'action' => 'edit', 'page' => 2])->assertRedirect('/opening-stock?page=2')->assertSessionHasInput('items');
+        $this->assertDatabaseCount('inventory_movements', 0);
+
+        // One item already counted elsewhere: nothing on the sheet is saved.
+        app(OpeningStockService::class)->confirm($second, ['quantity' => 1, 'unit_cost' => '1'], $this->admin);
+        $this->post('/opening-stock/confirm', ['items' => $items])->assertSessionHasErrors('items.'.$second->id.'.quantity');
+        $this->assertSame(0, $this->variant->inventory->physical_quantity);
+        $this->assertDatabaseCount('inventory_movements', 1);
+
+        unset($items[$second->id]);
+        $this->post('/opening-stock/confirm', ['items' => $items])->assertRedirect('/opening-stock')->assertSessionHas('status', fn ($m) => str_contains($m, '1 item'));
+        $this->assertSame(4, $this->variant->fresh()->inventory->physical_quantity);
+        $this->assertSame('25000.00', $this->variant->fresh()->weighted_average_cost);
+        $this->get('/opening-stock')->assertViewHas('counted', 2)->assertDontSee('JEANS-L');
+
+        $salesperson = User::factory()->create(['role_id' => Role::where('slug', 'salesperson')->value('id')]);
+        $this->actingAs($salesperson)->post('/opening-stock/review', ['items' => [$third->id => ['quantity' => 1, 'unit_cost' => '1']]])->assertForbidden();
+        $this->post('/opening-stock/confirm', ['items' => [$third->id => ['quantity' => 1, 'unit_cost' => '1']]])->assertForbidden();
+        $this->assertSame(0, $third->inventory->physical_quantity);
     }
 }

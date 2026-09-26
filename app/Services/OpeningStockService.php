@@ -13,9 +13,13 @@ use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OpeningStockService
 {
+    public const SHEET_LIMIT = 100;
+
     public function authorize(User $actor): void
     {
         $actor = $actor->fresh();
@@ -31,6 +35,69 @@ class OpeningStockService
         ])->validate();
 
         return ['quantity' => (int) $data['quantity'], 'unit_cost' => (string) BigDecimal::of((string) $data['unit_cost'])->toScale(2)];
+    }
+
+    /**
+     * Count-sheet rows keyed by variant id. Rows left completely blank are skipped; a row with
+     * only one of count and cost is an error. Returns [variant id => ['quantity', 'unit_cost']].
+     */
+    public function validateSheet(mixed $items): array
+    {
+        if (! is_array($items) || count($items) > self::SHEET_LIMIT) {
+            throw ValidationException::withMessages(['items' => 'Enter up to '.self::SHEET_LIMIT.' items at a time.']);
+        }
+        $rows = $errors = [];
+        foreach ($items as $id => $row) {
+            $row = is_array($row) ? $row : [];
+            $quantity = trim((string) (is_scalar($row['quantity'] ?? null) ? $row['quantity'] : ''));
+            $cost = trim((string) (is_scalar($row['unit_cost'] ?? null) ? $row['unit_cost'] : ''));
+            if (! ctype_digit((string) $id) || ($quantity === '' && $cost === '')) {
+                continue;
+            }
+            $check = Validator::make(['quantity' => $quantity, 'unit_cost' => $cost], [
+                'quantity' => ['required', 'integer', 'between:1,'.InventoryService::MAX_QUANTITY],
+                'unit_cost' => ['required', 'regex:'.ProductCatalogueService::PRICE_PATTERN],
+            ], ['quantity.required' => 'Enter how many are in the shop.', 'unit_cost.required' => 'Enter what each one cost.',
+                'unit_cost.regex' => 'Enter the cost as a number, for example 18500.']);
+            if ($check->fails()) {
+                foreach ($check->errors()->messages() as $field => $messages) {
+                    $errors["items.$id.$field"] = $messages;
+                }
+
+                continue;
+            }
+            $rows[(int) $id] = ['quantity' => (int) $quantity, 'unit_cost' => (string) BigDecimal::of($cost)->toScale(2)];
+        }
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
+        if (! $rows) {
+            throw ValidationException::withMessages(['items' => 'Enter a count and cost for at least one item.']);
+        }
+
+        return $rows;
+    }
+
+    /** Records a whole count sheet: every row or none, so a half-saved sheet never needs untangling. */
+    public function confirmSheet(mixed $items, User $actor): int
+    {
+        $this->authorize($actor);
+        $rows = $this->validateSheet($items);
+        $variants = ProductVariant::withTrashed()->whereIn('id', array_keys($rows))->get()->keyBy('id');
+
+        DB::transaction(function () use ($rows, $variants, $actor) {
+            foreach ($rows as $id => $row) {
+                $variant = $variants->get($id);
+                try {
+                    abort_unless($variant, 409);
+                    $this->confirm($variant, $row, $actor);
+                } catch (HttpException $exception) {
+                    throw ValidationException::withMessages(["items.$id.quantity" => ($variant?->sku ?? 'An item').' already has stock or is no longer on sale. Nothing was saved; remove it and try again.']);
+                }
+            }
+        });
+
+        return count($rows);
     }
 
     public function confirm(ProductVariant $variant, array $input, User $actor): InventoryMovement
