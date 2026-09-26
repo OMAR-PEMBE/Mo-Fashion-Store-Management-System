@@ -27,6 +27,8 @@
                 <h2 id="receipt-heading" class="text-base font-semibold">Receipts</h2>
                 <div><label for="receipt_footer" class="mb-2 block text-sm font-medium">Note at the bottom of every receipt</label><textarea id="receipt_footer" name="receipt_footer" rows="3" maxlength="500" placeholder="For example: Asante kwa kununua! Exchanges within 3 days with this receipt." class="{{ $textarea }}" @input="footer = $event.target.value">{{ $field('receipt_footer') }}</textarea>
                     <p class="mt-1 text-xs text-text-secondary">A thank-you, your return policy or social media handle.</p></div>
+                <input type="hidden" name="whatsapp_receipts" value="0">
+                <label class="flex items-start gap-3 text-sm"><input type="checkbox" name="whatsapp_receipts" value="1" class="mt-0.5 size-4" @checked($field('whatsapp_receipts') === '1')><span><span class="block font-semibold">Send receipts on WhatsApp</span><span class="block text-text-secondary">Ticks "Send the receipt on WhatsApp" at the counter whenever the customer has a number. Staff can still untick it for a sale.@if(config('messaging.whatsapp.driver') === 'log') WhatsApp is not connected yet, so messages are only written to the system log.@endif</span></span></label>
             </section>
 
             <section class="space-y-5 rounded-2xl border border-border bg-surface p-5 sm:p-6" aria-labelledby="stock-heading">

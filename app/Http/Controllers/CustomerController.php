@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Colour;
 use App\Models\Customer;
+use App\Models\Message;
 use App\Models\Size;
 use App\Services\CustomerService;
 use Illuminate\Http\Request;
@@ -80,6 +81,8 @@ class CustomerController extends Controller
 
         $sales = $customer->sales()->when(! auth()->user()->hasPermission('sales.view_all'), fn ($q) => $q->where('salesperson_id', auth()->id()))->orderByDesc('id')->paginate(10);
 
-        return view('customers.show', compact('customer', 'sales'));
+        $messages = Message::with('sale')->where('customer_id', $customer->id)->latest('id')->limit(10)->get();
+
+        return view('customers.show', compact('customer', 'sales', 'messages'));
     }
 }

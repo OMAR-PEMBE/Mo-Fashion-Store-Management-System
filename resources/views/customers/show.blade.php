@@ -27,6 +27,7 @@
     <p class="-mt-3 mb-6 text-xs text-text-secondary">Completed sales before any refunds.</p>
 
     <div class="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
+        <div class="space-y-6">
         <section class="rounded-2xl border border-border bg-surface p-5 text-sm" aria-labelledby="profile-heading">
             <h2 id="profile-heading" class="text-base font-semibold">Profile</h2>
             <dl class="mt-3 space-y-3">
@@ -42,6 +43,23 @@
                 @if($customer->notes)<div><dt class="text-text-secondary">Notes</dt><dd class="rounded-lg bg-background p-3 whitespace-pre-line break-words">{{ $customer->notes }}</dd></div>@endif
             </dl>
         </section>
+        @if($messages->isNotEmpty())
+            <section class="rounded-2xl border border-border bg-surface p-5 text-sm" aria-labelledby="messages-heading">
+                <h2 id="messages-heading" class="text-base font-semibold">Messages sent</h2>
+                <ul class="mt-3 space-y-3">
+                    @foreach($messages as $message)
+                        <li class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-medium">{{ $message->purpose === 'receipt' ? 'Receipt' : ucfirst($message->purpose) }} · {{ $message->channel === 'whatsapp' ? 'WhatsApp' : 'SMS' }}@if($message->sale) · @can('sales.create')<a href="{{ route('sales.show', $message->sale) }}" class="underline underline-offset-4">{{ $message->sale->sale_number }}</a>@else{{ $message->sale->sale_number }}@endcan @endif</p>
+                                <p class="text-xs text-text-secondary">{{ $message->recipientDisplay() }} · {{ $message->created_at->format('j M Y, H:i') }}</p>
+                            </div>
+                            <x-badge :tone="$message->statusTone()">{{ $message->statusLabel() }}</x-badge>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+        </div>
 
         <section class="overflow-hidden rounded-2xl border border-border bg-surface" aria-labelledby="history-heading">
             <h2 id="history-heading" class="border-b border-border px-5 py-4 text-base font-semibold">Purchase history</h2>

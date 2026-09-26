@@ -42,6 +42,16 @@
         <form method="POST" action="{{ route('sales.store') }}" class="mt-6 space-y-4" data-busy>@csrf
             @foreach(['request_key', 'customer_id', 'payment_method', 'payment_reference', 'notes'] as $field)<input type="hidden" name="{{ $field }}" value="{{ $data[$field] }}">@endforeach
             @foreach($data['items'] as $index => $item)@foreach($item as $field => $value)<input type="hidden" name="items[{{ $index }}][{{ $field }}]" value="{{ $value }}">@endforeach @endforeach
+            <div class="rounded-xl border border-border bg-surface p-4 text-sm" x-data="{ send: @js((bool) old('send_receipt', $autoReceipt && filled($receiptNumber))) }">
+                <label class="flex cursor-pointer items-start gap-4">
+                    <input type="checkbox" name="send_receipt" value="1" x-model="send" class="mt-0.5 size-5 shrink-0">
+                    <span><span class="block font-semibold">Send the receipt on WhatsApp</span><span class="mt-0.5 block text-text-secondary">A short message with a link to this receipt. The sale does not wait for it.</span></span>
+                </label>
+                <div x-show="send" x-cloak class="mt-3 pl-9">
+                    <label for="receipt_whatsapp" class="mb-1 block text-xs font-medium">WhatsApp number</label>
+                    <input id="receipt_whatsapp" name="receipt_whatsapp" type="tel" inputmode="tel" maxlength="30" value="{{ old('receipt_whatsapp', $receiptNumber) }}" placeholder="0755 123 456" autocomplete="off" class="min-h-11 w-full max-w-xs rounded-lg border border-border bg-surface px-3 py-2 text-sm">
+                </div>
+            </div>
             <label class="flex cursor-pointer items-start gap-4 rounded-xl border border-border bg-surface p-4 text-sm has-[:checked]:border-success has-[:checked]:bg-success/5">
                 <input type="checkbox" required name="payment_collected" value="1" class="mt-0.5 size-5 shrink-0 accent-[#2E7D32]">
                 <span><span class="block font-semibold">I have collected @money($totals['total_amount'])</span><span class="mt-0.5 block text-text-secondary">and checked the items with the customer.</span></span>

@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        View::composer(['components.layouts.app', 'sales.show'], function ($view) {
+        View::composer(['components.layouts.app', 'sales.show', 'receipts.public'], function ($view) {
             $view->with('business', app(BusinessSettingsService::class)->values());
         });
         // Sign-in and error pages must still render if settings cannot be read.

@@ -25,43 +25,39 @@
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start print:block">
         {{-- The receipt: what the customer gets, and the only thing printed --}}
-        <article class="mx-auto w-full max-w-xl rounded-2xl lg:mx-0 border border-border bg-surface p-6 sm:p-8 print:max-w-none print:border-0 print:p-0" aria-labelledby="receipt-title">
-            <header class="border-b border-dashed border-border pb-5 text-center">
-                <p id="receipt-title" class="text-lg font-bold tracking-tight">{{ $business['business_name'] }}</p>
-                @if($business['business_address'])<p class="mt-1 text-sm whitespace-pre-line text-text-secondary">{{ $business['business_address'] }}</p>@endif
-                @if($business['business_phone'])<p class="text-sm text-text-secondary">{{ $business['business_phone'] }}</p>@endif
-            </header>
-            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 border-b border-dashed border-border py-5 text-sm">
-                <dt class="text-text-secondary">Receipt</dt><dd class="text-right font-semibold">{{ $sale->sale_number }}</dd>
-                <dt class="text-text-secondary">Date</dt><dd class="text-right">{{ $sale->sale_date->format('j M Y, H:i') }}</dd>
-                <dt class="text-text-secondary">Served by</dt><dd class="text-right">{{ $sale->salesperson->name }}</dd>
-                <dt class="text-text-secondary">Customer</dt><dd class="text-right break-words">{{ $sale->customer?->full_name ?? 'Walk-in customer' }}</dd>
-            </dl>
-            <ul class="divide-y divide-border border-b border-dashed border-border">
-                @foreach($sale->items as $item)
-                    <li class="flex items-start justify-between gap-4 py-3 text-sm">
-                        <div class="min-w-0">
-                            <p class="font-semibold break-words">{{ $item->variant->product->name }}</p>
-                            <p class="text-xs text-text-secondary">{{ collect([$item->variant->size?->name, $item->variant->colour?->name, $item->variant->sku])->filter()->join(' · ') }}</p>
-                            <p class="text-xs text-text-secondary">{{ $item->quantity }} × @money($item->unit_price)@if($item->discount_amount !== '0.00') · discount @money($item->discount_amount)@endif</p>
-                        </div>
-                        <p class="shrink-0 font-semibold tabular-nums">@money($item->line_total)</p>
-                    </li>
-                @endforeach
-            </ul>
-            <dl class="space-y-1.5 py-5 text-sm">
-                @if($sale->discount_total !== '0.00')
-                    <div class="flex justify-between text-text-secondary"><dt>Subtotal</dt><dd class="tabular-nums">@money($sale->subtotal)</dd></div>
-                    <div class="flex justify-between text-text-secondary"><dt>Discount</dt><dd class="tabular-nums">-@money($sale->discount_total)</dd></div>
-                @endif
-                <div class="flex items-baseline justify-between"><dt class="font-semibold">Total paid</dt><dd class="text-2xl font-bold tracking-tight tabular-nums">@money($sale->total_amount)</dd></div>
-                <div class="flex justify-between text-text-secondary"><dt>Paid by</dt><dd>{{ $methods[$sale->payment_method] }}@if($sale->payment_reference) · <span class="break-all">{{ $sale->payment_reference }}</span>@endif</dd></div>
-            </dl>
-            @if($sale->notes)<p class="rounded-lg bg-background p-3 text-sm break-words print:hidden"><span class="text-text-secondary">Note:</span> {{ $sale->notes }}</p>@endif
-            @if($business['receipt_footer'])<p class="mt-5 border-t border-dashed border-border pt-5 text-center text-sm whitespace-pre-line text-text-secondary">{{ $business['receipt_footer'] }}</p>@endif
-        </article>
+        <x-receipt :sale="$sale" :business="$business" />
 
         <div class="space-y-6 print:hidden">
+            <section class="rounded-2xl border border-border bg-surface p-5 text-sm" aria-labelledby="whatsapp-heading">
+                <h2 id="whatsapp-heading" class="text-base font-semibold">Receipt on WhatsApp</h2>
+                @if($messages->isNotEmpty())
+                    <ul class="mt-3 space-y-2">
+                        @foreach($messages as $message)
+                            <li class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="font-medium">{{ $message->recipientDisplay() }}</p>
+                                    <p class="text-xs text-text-secondary">{{ ($message->sent_at ?? $message->failed_at ?? $message->created_at)->format('j M Y, H:i') }}</p>
+                                    @if($message->status === 'failed' && $message->error)<p class="mt-0.5 text-xs break-words text-danger">{{ \Illuminate\Support\Str::limit($message->error, 160) }}</p>@endif
+                                </div>
+                                <x-badge :tone="$message->statusTone()">{{ $message->statusLabel() }}</x-badge>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="mt-1 text-text-secondary">Not sent yet.</p>
+                @endif
+                <form method="POST" action="{{ route('sales.receipt.whatsapp', $sale) }}" class="mt-4 flex flex-wrap items-end gap-2" data-busy>
+                    @csrf
+                    <div class="min-w-0 flex-1">
+                        <label for="receipt_whatsapp" class="mb-1 block text-xs font-medium">WhatsApp number</label>
+                        <input id="receipt_whatsapp" name="receipt_whatsapp" type="tel" inputmode="tel" maxlength="30" required value="{{ old('receipt_whatsapp', $receiptNumber) }}" placeholder="0755 123 456" autocomplete="off"
+                            class="min-h-11 w-full rounded-lg border bg-surface px-3 py-2 text-sm {{ $errors->has('receipt_whatsapp') ? 'border-danger' : 'border-border' }}" @error('receipt_whatsapp') aria-invalid="true" aria-describedby="receipt-whatsapp-error" @enderror>
+                    </div>
+                    <x-button type="submit" variant="outline" data-busy-label="Sending…">{{ $messages->isEmpty() ? 'Send' : 'Send again' }}</x-button>
+                    @error('receipt_whatsapp')<p id="receipt-whatsapp-error" class="w-full text-xs text-danger">{{ $message }}</p>@enderror
+                </form>
+                @if(config('messaging.whatsapp.driver') === 'log')<p class="mt-3 text-xs text-text-secondary">Test mode: messages are written to the system log, not sent. They go out for real once WhatsApp is connected.</p>@endif
+            </section>
             @if($afterSales)
                 <section class="rounded-2xl border border-border bg-surface p-5" aria-labelledby="after-sales-heading">
                     <h2 id="after-sales-heading" class="text-base font-semibold">After the sale</h2>

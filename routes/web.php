@@ -17,6 +17,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\RefundController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReceiptLinkController;
 use App\Http\Controllers\ReturnController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SettingsController;
@@ -38,6 +39,9 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// The receipt link sent to a customer: works without signing in, only with a valid signature, and expires.
+Route::get('/receipt/{sale}', ReceiptLinkController::class)->whereNumber('sale')->middleware(['signed', 'throttle:60,1'])->name('receipts.public');
 
 Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
     Route::get('/audit-logs', [AuditController::class, 'index'])->middleware('can:audit.view')->name('audit.index');
@@ -96,6 +100,7 @@ Route::middleware(['auth', 'active', 'auth.session'])->group(function () {
         Route::get('/sales', [SaleController::class, 'index'])->name('sales.index');
         Route::post('/sales', [SaleController::class, 'store'])->name('sales.store');
         Route::get('/sales/{sale}', [SaleController::class, 'show'])->name('sales.show');
+        Route::post('/sales/{sale}/receipt/whatsapp', [SaleController::class, 'sendReceipt'])->middleware('throttle:20,1')->name('sales.receipt.whatsapp');
         Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel'])->name('sales.cancel');
     });
     Route::resource('customers', CustomerController::class)->except('destroy')->middleware('can:customers.create');

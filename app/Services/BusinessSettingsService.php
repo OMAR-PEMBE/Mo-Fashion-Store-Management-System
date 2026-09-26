@@ -18,6 +18,8 @@ class BusinessSettingsService
         'business_name' => 'Mo Fashion Store', 'business_phone' => '', 'business_address' => '',
         'currency' => 'TZS', 'timezone' => 'Africa/Dar_es_Salaam', 'low_stock_default' => '2',
         'receipt_footer' => 'Thank you for shopping with us.',
+        // '1' ticks "Send receipt on WhatsApp" at the counter whenever the customer has a number.
+        'whatsapp_receipts' => '0',
     ];
 
     public function values(): array
@@ -49,7 +51,7 @@ class BusinessSettingsService
                 'business_name' => ['required', 'string', 'max:150'],
                 'business_phone' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9 ()-]{7,30}$/'],
                 'business_address' => ['nullable', 'string', 'max:500'], 'receipt_footer' => ['nullable', 'string', 'max:500'],
-                'low_stock_default' => ['required', 'integer', 'between:0,2147483647'],
+                'low_stock_default' => ['required', 'integer', 'between:0,2147483647'], 'whatsapp_receipts' => ['required', Rule::in(['0', '1'])],
                 'currency' => ['required', Rule::in(['TZS'])], 'timezone' => ['required', Rule::in(['Africa/Dar_es_Salaam'])],
                 'revision' => ['required', 'string', 'size:64'], 'current_password' => ['required', 'string', 'max:255'],
             ])->validate();
@@ -63,7 +65,7 @@ class BusinessSettingsService
             foreach (self::DEFAULTS as $key => $default) {
                 $after[$key] = trim((string) ($data[$key] ?? ''));
                 $setting = SystemSetting::firstOrNew(['key' => $key]);
-                $setting->forceFill(['value' => $after[$key], 'type' => $key === 'low_stock_default' ? 'integer' : 'string', 'updated_by' => $actor->id])->save();
+                $setting->forceFill(['value' => $after[$key], 'type' => match ($key) { 'low_stock_default' => 'integer', 'whatsapp_receipts' => 'boolean', default => 'string' }, 'updated_by' => $actor->id])->save();
             }
             if ($after !== $before) {
                 app(AuditService::class)->record($actor, 'UPDATE_SETTINGS', 'system_settings', null, $before, $after);

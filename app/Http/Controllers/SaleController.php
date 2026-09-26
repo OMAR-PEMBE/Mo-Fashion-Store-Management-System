@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Message;
 use App\Models\ProductVariant;
 use App\Models\Sale;
+use App\Services\BusinessSettingsService;
+use App\Services\MessageService;
 use App\Services\SaleService;
+use App\Support\Phone;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SaleController extends Controller
@@ -94,10 +99,14 @@ class SaleController extends Controller
         // Preserve the reviewed cart when returning to edit; completion still validates it anew.
         $request->session()->flashInput($data);
 
-        return view('sales.review', compact('data', 'variants', 'customer', 'totals'));
+        // WhatsApp receipt: prefilled from the customer, ticked when the shop sends receipts automatically.
+        $receiptNumber = Phone::display($customer?->whatsapp_number ?: $customer?->phone);
+        $autoReceipt = app(BusinessSettingsService::class)->values()['whatsapp_receipts'] === '1';
+
+        return view('sales.review', compact('data', 'variants', 'customer', 'totals', 'receiptNumber', 'autoReceipt'));
     }
 
-    public function store(Request $request, SaleService $service)
+    public function store(Request $request, SaleService $service, MessageService $messages)
     {
         try {
             $sale = $service->completeSale($request->all(), $request->user());
@@ -110,7 +119,18 @@ class SaleController extends Controller
             return response()->view('sales.conflict', ['message' => $exception->getMessage()], 409);
         }
 
-        return redirect()->route('sales.show', $sale)->with('status', 'Sale completed. Stock and customer history updated.');
+        $status = 'Sale completed. Stock and customer history updated.';
+        if ($request->boolean('send_receipt')) {
+            try {
+                $message = $messages->queueReceipt($sale, (string) $request->input('receipt_whatsapp'), $request->user());
+                $status .= ' WhatsApp receipt '.($message->status === 'failed' ? 'could not be sent; see below.' : 'on its way to '.$message->recipientDisplay().'.');
+            } catch (ValidationException) {
+                // The sale is done either way; the number can be fixed and the receipt resent from the sale page.
+                $status .= ' The WhatsApp number looked wrong, so no receipt was sent; fix it below and send again.';
+            }
+        }
+
+        return redirect()->route('sales.show', $sale)->with('status', $status);
     }
 
     public function show(Request $request, Sale $sale)
@@ -118,7 +138,19 @@ class SaleController extends Controller
         abort_unless($request->user()->hasPermission('sales.view_all') || $sale->salesperson_id === $request->user()->id, 403);
         $sale->load(['customer', 'salesperson', 'items.variant.product', 'items.variant.size', 'items.variant.colour', 'returns', 'refunds', 'exchanges']);
 
-        return view('sales.show', compact('sale'));
+        $messages = Message::where('sale_id', $sale->id)->latest('id')->limit(5)->get();
+        $receiptNumber = $messages->first()?->recipientDisplay() ?? Phone::display($sale->customer?->whatsapp_number ?: $sale->customer?->phone);
+
+        return view('sales.show', compact('sale', 'messages', 'receiptNumber'));
+    }
+
+    public function sendReceipt(Request $request, Sale $sale, MessageService $messages)
+    {
+        abort_unless($request->user()->hasPermission('sales.view_all') || $sale->salesperson_id === $request->user()->id, 403);
+        $request->validate(['receipt_whatsapp' => ['required', 'string', 'max:30']], ['receipt_whatsapp.required' => 'Enter the WhatsApp number to send the receipt to.']);
+        $message = $messages->queueReceipt($sale, $request->input('receipt_whatsapp'), $request->user(), resend: true);
+
+        return redirect()->route('sales.show', $sale)->with('status', $message->status === 'failed' ? 'The receipt could not be sent. See the reason below.' : 'Receipt sent to '.$message->recipientDisplay().' on WhatsApp.');
     }
 
     public function cancel(Request $request, Sale $sale, SaleService $service)
