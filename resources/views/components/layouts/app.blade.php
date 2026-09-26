@@ -80,8 +80,8 @@
 </head>
 <body>
     <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-lg focus:bg-surface focus:p-3">Skip to content</a>
-    <div class="min-h-screen lg:grid lg:grid-cols-[248px_1fr]" x-data="{ navigationOpen: false }">
-        <aside class="bg-text-primary text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+    <div class="min-h-screen lg:grid lg:grid-cols-[248px_1fr] print:block" x-data="{ navigationOpen: false }">
+        <aside class="bg-text-primary text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col print:hidden">
             <div class="flex items-center justify-between px-5 py-4 lg:px-6 lg:py-7">
                 <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-3" aria-label="{{ $business['business_name'] }} home">
                     <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-text-primary" aria-hidden="true">{{ $monogram }}</span>
@@ -111,7 +111,7 @@
         <div class="min-w-0">
             @php $showShortcut = $user?->can('sales.create') && ! request()->routeIs('sales.create', 'sales.review', 'sales.show', 'dashboard'); @endphp
             {{-- On phones the account menu lives in the dark bar, so this bar only appears when it carries the sale shortcut. --}}
-            <header @class(['min-h-14 items-center justify-between gap-4 border-b border-border bg-surface px-5 sm:min-h-16 lg:flex lg:px-10', 'flex' => $showShortcut, 'hidden' => ! $showShortcut])>
+            <header @class(['min-h-14 items-center justify-between gap-4 border-b border-border bg-surface px-5 sm:min-h-16 lg:flex lg:px-10 print:hidden', 'flex' => $showShortcut, 'hidden' => ! $showShortcut])>
                 <div>
                     @if($showShortcut)
                         <a href="{{ route('sales.create') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-text-primary px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-700">
@@ -120,11 +120,11 @@
                 </div>
                 @auth<x-account-menu :user="$user" :initials="$initials" class="hidden lg:block" />@endauth
             </header>
-            <main id="main-content" tabindex="-1" class="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-10">
+            <main id="main-content" tabindex="-1" class="mx-auto max-w-7xl px-5 py-8 lg:px-10 lg:py-10 print:p-0">
                 {{-- Every action's confirmation appears in the same place on every page. --}}
                 @if(session('status'))
                     <div role="status" x-data="{ shown: true }" x-show="shown" x-transition.opacity.duration.200ms
-                        class="mb-6 flex items-start gap-3 rounded-xl border border-success/30 bg-success/5 p-4 text-sm">
+                        class="mb-6 flex items-start gap-3 rounded-xl border border-success/30 bg-success/5 p-4 text-sm print:hidden">
                         <svg class="mt-0.5 size-5 shrink-0 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
                         <p class="flex-1 break-words">{{ session('status') }}</p>
                         <button type="button" @click="shown = false" class="-m-1 rounded p-1 text-text-secondary hover:text-text-primary" aria-label="Dismiss message">

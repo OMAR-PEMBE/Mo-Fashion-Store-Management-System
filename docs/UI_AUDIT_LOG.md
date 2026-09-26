@@ -46,3 +46,22 @@ preselected Cash; no confirmation messages after actions; "Fulfilment status upd
   customer, payment and a readable history.
 - Payment dialog: one-tap methods, nothing preselected, reference only for non-cash.
 - Messages now name the step: "Order marked as preparing."
+
+## Sales history and receipts
+
+**Found:** four filter fields but no quick date choices; no total for the filtered
+view; only the sale number clickable; no phone layout. The sale page was titled "Sale
+completed", had no way to print a receipt, put the business details in a lone box at the
+bottom, and showed three gold after-sales buttons each followed by its own history box.
+
+**Changed:**
+- List: Today / This week / This month / All dates shortcuts, search and filters folded
+  into one expandable panel, a running line "10 sales · Completed value TZS 1,065,000",
+  whole-row links and phone cards.
+- Sale page is now the receipt: business header, receipt number, date, staff, customer,
+  items (product names first), totals, payment and the receipt footer from Business
+  settings. **Print receipt** prints only the receipt (sidebar, header and side panels
+  are hidden when printing).
+- One "After the sale" panel: Return items / Refund money / Exchange items with a short
+  explanation each, and a single combined history with status badges.
+- Owners see cost and gross profit for the sale in a separate panel.

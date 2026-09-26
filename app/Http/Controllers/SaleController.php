@@ -6,6 +6,8 @@ use App\Models\Customer;
 use App\Models\ProductVariant;
 use App\Models\Sale;
 use App\Services\SaleService;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -17,14 +19,16 @@ class SaleController extends Controller
     {
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'payment_method' => ['nullable', Rule::in(array_keys(SaleService::PAYMENT_METHODS))],
             'date_from' => ['nullable', 'date_format:Y-m-d'], 'date_to' => ['nullable', 'date_format:Y-m-d']]);
-        $sales = Sale::with(['customer', 'salesperson'])->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->where('salesperson_id', $request->user()->id))
+        $query = Sale::query()->when(! $request->user()->hasPermission('sales.view_all'), fn ($q) => $q->where('salesperson_id', $request->user()->id))
             ->when($filters['q'] ?? null, fn ($q, $search) => $q->where(fn ($q) => $q->where('sale_number', 'like', '%'.$search.'%')->orWhereHas('customer', fn ($q) => $q->where('full_name', 'like', '%'.$search.'%'))))
             ->when($filters['payment_method'] ?? null, fn ($q, $value) => $q->where('payment_method', $value))
             ->when($filters['date_from'] ?? null, fn ($q, $value) => $q->where('sale_date', '>=', $value.' 00:00:00'))
-            ->when($filters['date_to'] ?? null, fn ($q, $value) => $q->where('sale_date', '<=', $value.' 23:59:59'))
-            ->orderByDesc('id')->paginate(15)->withQueryString();
+            ->when($filters['date_to'] ?? null, fn ($q, $value) => $q->where('sale_date', '<=', $value.' 23:59:59'));
+        // Headline for whatever is filtered: "12 sales · TZS 1,245,000". Only completed sales count toward money.
+        $summary = ['count' => (clone $query)->count(), 'total' => (string) BigDecimal::of((string) ((clone $query)->where('status', 'COMPLETED')->sum('total_amount') ?: '0'))->toScale(2, RoundingMode::HalfUp)];
+        $sales = (clone $query)->with(['customer', 'salesperson'])->orderByDesc('id')->paginate(15)->withQueryString();
 
-        return view('sales.index', compact('sales', 'filters'));
+        return view('sales.index', compact('sales', 'filters', 'summary'));
     }
 
     public function create()
@@ -111,7 +115,7 @@ class SaleController extends Controller
     public function show(Request $request, Sale $sale)
     {
         abort_unless($request->user()->hasPermission('sales.view_all') || $sale->salesperson_id === $request->user()->id, 403);
-        $sale->load(['customer', 'salesperson', 'items.variant.product', 'returns', 'refunds', 'exchanges']);
+        $sale->load(['customer', 'salesperson', 'items.variant.product', 'items.variant.size', 'items.variant.colour', 'returns', 'refunds', 'exchanges']);
 
         return view('sales.show', compact('sale'));
     }
