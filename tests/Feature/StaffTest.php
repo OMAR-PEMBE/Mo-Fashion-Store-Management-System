@@ -90,7 +90,7 @@ class StaffTest extends TestCase
         $this->post('/login', ['email' => $staff->email, 'password' => 'TemporaryStaff123'])->assertRedirect('/dashboard');
         $this->get('/dashboard')->assertRedirect('/profile');
         $this->get('/pos')->assertRedirect('/profile');
-        $this->get('/profile')->assertOk()->assertSee('Change your temporary password');
+        $this->get('/profile')->assertOk()->assertSee('Choose your own password to continue');
         $this->put('/password', ['current_password' => 'TemporaryStaff123', 'password' => 'PrivateStaff456', 'password_confirmation' => 'PrivateStaff456'])->assertRedirect()->assertSessionHasNoErrors();
         $this->assertFalse($staff->fresh()->must_change_password);
         $this->get('/dashboard')->assertOk();

@@ -318,3 +318,29 @@ plain names.
 - Forms: the category short code and size code fill in from the name as you type (typing
   your own stops that); new sizes start at the end of the list; "Available for new
   products" switch instead of a status dropdown; example placeholders.
+
+## Your profile and the "sale not recorded" screen
+
+**Found (profile):** a new staff member forced to change their temporary password saw a
+warning line above an account card, with the form further down; no guidance while typing
+a new password; staff could not see what their role allows. The redirect also flashed a
+green "success" banner repeating the warning.
+
+**Changed:**
+- A "Next step: Choose your own password to continue" panel on first sign-in, the
+  password form first and highlighted, "Temporary password you were given" as the label,
+  and **Save and continue**.
+- A live checklist under the new password (10 characters, a letter, a number, both boxes
+  match) that ticks green as you type, matching the server's rules; show/hide on every
+  box.
+- Side panel: initials, role, phone, last sign-in, "Ask an administrator" for wrong
+  details, and a fold-out "What your role lets you do" in the same plain words as the
+  role screen.
+- The forced redirect no longer flashes the duplicate banner.
+- Checked in the browser: a new salesperson signs in with the suggested temporary
+  password, lands here, sets their own and goes straight on to the point of sale.
+
+**Found (sale not recorded):** a bare card with the raw message.
+**Changed:** a warning icon, "This sale was not recorded", the reason, a plain note that
+the cart is kept and nothing was charged or taken from stock (and to check recent sales in
+case a double tap already went through), with **Return to cart** as the main action.

@@ -29,7 +29,8 @@ class EnsureActiveAccount
         }
 
         if ($fresh->must_change_password && ! $request->routeIs('profile', 'password.update')) {
-            return redirect()->route('profile')->with('status', 'Change your temporary password before using the workspace.');
+            // The profile page explains why in its own "Next step" panel.
+            return redirect()->route('profile');
         }
 
         $response = $next($request);
