@@ -283,3 +283,20 @@ comparing them by eye.
   table, one row per field with Before and After side by side, changed rows highlighted
   (and marked for screen readers); a details panel linking to the record. Secrets are
   still redacted, and nothing can be edited or deleted.
+
+## Admin: business settings
+
+**Found:** one plain form. The owner could not see how the name, address, phone and footer
+would look on a receipt until after a sale, and "Receipt footer" and "Default low-stock
+threshold" were technical names.
+
+**Changed:**
+- Grouped into Shop details / Receipts / Stock / Fixed for this version, with examples
+  in the empty boxes ("Asante kwa kununua! Exchanges within 3 days…").
+- A **live receipt preview** beside the form updates as you type (it stays in view on
+  desktop and sits below the form on phones).
+- "Note at the bottom of every receipt" and "Restock at (for new items)" in plain words;
+  currency and time zone shown as fixed facts with the reason.
+- Caught during the browser check: my first version stopped sending the fixed currency
+  and time zone, so saving failed. They are hidden fields now, and a new test checks that
+  the rendered form includes every field the save needs.

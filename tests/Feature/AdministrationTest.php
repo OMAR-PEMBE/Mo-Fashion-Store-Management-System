@@ -167,4 +167,9 @@ class AdministrationTest extends TestCase
         $page = $this->get('/audit-logs/'.$id)->assertOk()->assertSee('What changed')->assertSee('100.00')->assertSee('90.00')->assertSee(route('expenses.show', 5), false);
         $this->assertSame(1, substr_count($page->getContent(), '(changed)'));
     }
+    public function test_settings_form_sends_every_field_the_save_needs(): void
+    {
+        preg_match_all('/name="([a-z_]+)"/', $this->get('/settings')->assertOk()->assertSee('Receipt preview')->getContent(), $matches);
+        $this->assertEqualsCanonicalizing([], array_diff(array_keys($this->data()), $matches[1]));
+    }
 }
