@@ -434,4 +434,28 @@ class ProductCatalogueTest extends TestCase
         }
         $this->assertSame('45000.50', $variant->fresh()->selling_price);
     }
+    public function test_blank_product_code_is_made_from_the_category_and_fixed_once_stock_moves(): void
+    {
+        $this->get('/products/create')->assertOk()->assertViewHas('suggestions', fn ($codes) => $codes[$this->category->id] === 'JEA-001');
+        $this->post('/products', $this->productData(['product_code' => '']))->assertSessionHasNoErrors();
+        $this->post('/products', $this->productData(['product_code' => ' ', 'name' => 'Skinny Jeans']))->assertSessionHasNoErrors();
+        $this->assertSame(['JEA-001', 'JEA-002'], Product::orderBy('id')->pluck('product_code')->all());
+
+        // Archived products keep their number, and a hand-typed code in the same style is respected.
+        Product::where('product_code', 'JEA-002')->firstOrFail()->delete();
+        (new Product)->forceFill(['name' => 'Typed', 'product_code' => 'JEA-0010', 'category_id' => $this->category->id, 'created_by' => $this->admin->id])->save();
+        $this->assertSame('JEA-0011', app(ProductCatalogueService::class)->suggestCode($this->category));
+        $this->assertSame('PRD-001', app(ProductCatalogueService::class)->suggestCode(Category::create(['name' => '123', 'slug' => 'numbers'])));
+
+        // The code can be corrected until the product has stock or sales, then it is fixed.
+        $product = Product::where('product_code', 'JEA-001')->firstOrFail();
+        $this->put('/products/'.$product->id, $this->productData(['product_code' => 'JEA-100']))->assertSessionHasNoErrors();
+        $variant = app(ProductCatalogueService::class)->saveVariant($product->fresh(), $this->variantData());
+        app(OpeningStockService::class)->confirm($variant, ['quantity' => 1, 'unit_cost' => '1'], $this->admin);
+        $this->get('/products/'.$product->id.'/edit')->assertOk()->assertViewHas('codeLocked', true)->assertSee('Fixed: it is already on receipts');
+        $this->put('/products/'.$product->id, $this->productData(['product_code' => 'JEA-200']))->assertSessionHasErrors('product_code');
+        $this->put('/products/'.$product->id, $this->productData(['product_code' => 'JEA-100', 'name' => 'Renamed']))->assertSessionHasNoErrors();
+        $this->assertSame(['JEA-100', 'Renamed'], [$product->fresh()->product_code, $product->fresh()->name]);
+        $this->put('/products/'.$product->id, $this->productData(['product_code' => '']))->assertSessionHasErrors('product_code');
+    }
 }

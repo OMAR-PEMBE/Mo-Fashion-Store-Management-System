@@ -30,7 +30,8 @@ class ProductCatalogueService
                 $product = $product ? Product::lockForUpdate()->findOrFail($product->id) : new Product;
                 $data = Validator::make($input, [
                     'name' => ['required', 'string', 'max:191'],
-                    'product_code' => ['required', 'string', 'max:100', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/', Rule::unique('products')->ignore($product->id)],
+                    // Left blank on a new product, the code is made from the category below.
+                    'product_code' => [$product->exists ? 'required' : 'nullable', 'string', 'max:100', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/', Rule::unique('products')->ignore($product->id)],
                     'category_id' => ['required', 'integer', 'exists:categories,id'],
                     'description' => ['nullable', 'string', 'max:5000'],
                     'default_selling_price' => ['nullable', 'regex:'.self::PRICE_PATTERN],
@@ -39,6 +40,13 @@ class ProductCatalogueService
                 $category = Category::lockForUpdate()->find($data['category_id']);
                 if (! $category || (! $category->is_active && ($data['is_active'] || $product->category_id != $category->id))) {
                     throw ValidationException::withMessages(['category_id' => 'Choose an active category.']);
+                }
+                if (blank($data['product_code'] ?? null)) {
+                    // The category row is locked above, so two new products in one category cannot take the same number.
+                    $data['product_code'] = $this->suggestCode($category);
+                }
+                if ($product->exists && $product->product_code !== $data['product_code'] && $this->hasHistory($product)) {
+                    throw ValidationException::withMessages(['product_code' => 'This code is already on receipts and stock records, so it cannot change now.']);
                 }
                 $before = $product->exists ? $product->default_selling_price : null;
                 $existing = $product->exists;
@@ -151,6 +159,27 @@ class ProductCatalogueService
             $record->is_active = false;
             $record->restore();
         });
+    }
+
+    /** Short codes from the category: Dresses gives DRE-001, DRE-002 … (keeps any longer padding already in use). */
+    public function suggestCode(Category $category): string
+    {
+        $letters = preg_replace('/[^A-Z]/', '', Str::upper(Str::ascii($category->name)));
+        $prefix = substr($letters, 0, 3) ?: 'PRD';
+        $numbers = Product::withTrashed()->where('product_code', 'like', $prefix.'-%')->pluck('product_code')
+            ->map(fn ($code) => preg_match('/^'.$prefix.'-(\d+)$/', $code, $m) ? $m[1] : null)->filter();
+        $width = max(3, (int) $numbers->map(fn ($digits) => strlen($digits))->max());
+
+        return $prefix.'-'.str_pad((string) ((int) $numbers->map(fn ($digits) => (int) $digits)->max() + 1), $width, '0', STR_PAD_LEFT);
+    }
+
+    /** True once any option of the product has moved stock or been sold. */
+    public function hasHistory(Product $product): bool
+    {
+        $variants = ProductVariant::withTrashed()->where('product_id', $product->id)->select('id');
+
+        return DB::table('inventory_movements')->whereIn('product_variant_id', $variants)->exists()
+            || DB::table('sale_items')->whereIn('product_variant_id', $variants)->exists();
     }
 
     private function normalize(array $input, string $code): array

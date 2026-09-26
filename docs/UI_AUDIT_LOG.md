@@ -344,3 +344,22 @@ green "success" banner repeating the warning.
 **Changed:** a warning icon, "This sale was not recorded", the reason, a plain note that
 the cart is kept and nothing was charged or taken from stock (and to check recent sales in
 case a double tap already went through), with **Return to cart** as the main action.
+
+## Stock: automatic product codes
+
+**Asked for:** product codes filled in automatically from the product's details, still
+editable by hand. Short format chosen.
+
+**Changed:**
+- Codes are the first three letters of the category plus a running number: Dresses gives
+  `DRE-001`, `DRE-002`…; a category name with no letters uses `PRD`. Numbers count
+  archived products and hand-typed codes in the same style, and keep any longer padding
+  already in use (`JEA-0010` → `JEA-0011`).
+- The form asks for the category first; the code appears as soon as one is picked and
+  follows it until you type your own. Leaving the box empty is fine: the server makes the
+  code itself while holding the category row, so two people adding products at the same
+  moment cannot get the same number.
+- Size and colour codes still build on it (`DRE-001-RED-M`).
+- The code can be corrected until the product has any stock movement or sale; after that
+  it is read-only ("Fixed: it is already on receipts and stock records"), and the server
+  refuses a change too. Existing products keep their codes.

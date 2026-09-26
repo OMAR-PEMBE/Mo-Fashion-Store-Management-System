@@ -118,6 +118,11 @@ class ProductController extends Controller
     {
         $categories = Category::where(fn ($q) => $q->where('is_active', true)->orWhere('id', $product->category_id))->orderBy('name')->get();
 
-        return view('products.form', compact('product', 'categories'));
+        $catalogue = app(ProductCatalogueService::class);
+        // New products: the next code for each category, shown as soon as one is picked.
+        $suggestions = $product->exists ? [] : $categories->mapWithKeys(fn ($category) => [$category->id => $catalogue->suggestCode($category)])->all();
+        $codeLocked = $product->exists && $catalogue->hasHistory($product);
+
+        return view('products.form', compact('product', 'categories', 'suggestions', 'codeLocked'));
     }
 }

@@ -10,9 +10,16 @@
 
         <section class="space-y-5 rounded-2xl border border-border bg-surface p-5 sm:p-6">
             <x-input name="name" label="Product name" :value="old('name', $product->name)" required maxlength="191" autofocus placeholder="For example Boyfriend Jeans" />
-            <div class="grid gap-5 sm:grid-cols-2">
-                <x-input name="product_code" label="Product code" :value="old('product_code', $product->product_code)" required maxlength="100" placeholder="For example JEANS-001" help="Unique. Letters, numbers, - and _; saved in capitals." />
-                <x-select name="category_id" label="Category" required><option value="">Choose a category</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected(old('category_id', $product->category_id) == $category->id)>{{ $category->name }}{{ $category->is_active ? '' : ' (switched off)' }}</option>@endforeach</x-select>
+            <div class="grid gap-5 sm:grid-cols-2" x-data="{ suggestions: @js($suggestions), auto: @js(! $editing && blank(old('product_code'))) }"
+                x-init="const picked = $el.querySelector('select').value; if (auto && $refs.code && suggestions[picked]) $refs.code.value = suggestions[picked]">
+                <x-select name="category_id" label="Category" required x-on:change="if (auto && suggestions[$event.target.value]) $refs.code.value = suggestions[$event.target.value]"><option value="">Choose a category</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected(old('category_id', $product->category_id) == $category->id)>{{ $category->name }}{{ $category->is_active ? '' : ' (switched off)' }}</option>@endforeach</x-select>
+                @if($codeLocked)
+                    <x-input name="product_code" label="Product code" :value="$product->product_code" required maxlength="100" readonly class="bg-background" help="Fixed: it is already on receipts and stock records." />
+                @else
+                    <x-input name="product_code" label="Product code" :value="old('product_code', $product->product_code)" :required="$editing" maxlength="100" x-ref="code" x-on:input="auto = false"
+                        :placeholder="$editing ? null : 'Choose a category first'"
+                        :help="$editing ? 'Letters, numbers, - and _; saved in capitals. It becomes fixed once the product has stock or sales.' : 'Filled in from the category, for example DRE-001. Type your own if you prefer.'" />
+                @endif
             </div>
             <x-input name="default_selling_price" label="Usual selling price (TZS, optional)" :value="old('default_selling_price', $product->default_selling_price)" inputmode="decimal" maxlength="16" help="Filled in for each new size or colour. Changing it later does not change existing prices." />
             <div><label for="description" class="mb-2 block text-sm font-medium">Description (optional)</label><textarea id="description" name="description" rows="3" maxlength="5000" class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm" @if($errors->has('description')) aria-invalid="true" aria-describedby="description-error" @endif>{{ old('description', $product->description) }}</textarea>@error('description')<p id="description-error" class="mt-2 text-sm text-danger">{{ $message }}</p>@enderror</div>
