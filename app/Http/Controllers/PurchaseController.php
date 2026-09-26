@@ -17,16 +17,17 @@ class PurchaseController extends Controller
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'status' => ['nullable', Rule::enum(PurchaseStatus::class)],
             'supplier_id' => ['nullable', 'integer'], 'payment_status' => ['nullable', Rule::in(['PAID', 'PARTIALLY_PAID', 'UNPAID'])],
             'date_from' => ['nullable', 'date_format:Y-m-d'], 'date_to' => ['nullable', 'date_format:Y-m-d']]);
-        $purchases = Purchase::with('supplier')
+        $visible = Purchase::query()
             ->when($filters['q'] ?? null, fn ($q, $search) => $q->where(fn ($q) => $q->where('purchase_number', 'like', '%'.$search.'%')->orWhere('supplier_invoice_number', 'like', '%'.$search.'%')->orWhereHas('supplier', fn ($q) => $q->where('name', 'like', '%'.$search.'%'))))
-            ->when($filters['status'] ?? null, fn ($q, $value) => $q->where('status', $value))
             ->when($filters['supplier_id'] ?? null, fn ($q, $value) => $q->where('supplier_id', $value))
             ->when($filters['payment_status'] ?? null, fn ($q, $value) => $q->where('payment_status', $value))
             ->when($filters['date_from'] ?? null, fn ($q, $value) => $q->where('purchase_date', '>=', $value))
-            ->when($filters['date_to'] ?? null, fn ($q, $value) => $q->where('purchase_date', '<=', $value))
-            ->orderByDesc('id')->paginate(15)->withQueryString();
+            ->when($filters['date_to'] ?? null, fn ($q, $value) => $q->where('purchase_date', '<=', $value));
+        $counts = (clone $visible)->toBase()->selectRaw('status, COUNT(*) AS total')->groupBy('status')->pluck('total', 'status')->map(fn ($n) => (int) $n);
+        $purchases = (clone $visible)->with('supplier')->withSum('items', 'quantity')
+            ->when($filters['status'] ?? null, fn ($q, $value) => $q->where('status', $value))->orderByDesc('id')->paginate(15)->withQueryString();
 
-        return view('purchases.index', compact('purchases', 'filters'));
+        return view('purchases.index', compact('purchases', 'filters', 'counts'));
     }
 
     public function lookup(Request $request)
@@ -84,7 +85,7 @@ class PurchaseController extends Controller
     {
         $purchase = $service->createDraft($request->all(), $request->user());
 
-        return redirect()->route('purchases.show', $purchase)->with('status', 'Draft saved. Review the items before confirming.');
+        return redirect()->route('purchases.show', $purchase)->with('status', 'Draft saved. Check it, then receive the stock when the goods arrive.');
     }
 
     public function update(Request $request, Purchase $purchase, PurchaseService $service)
@@ -105,7 +106,7 @@ class PurchaseController extends Controller
     {
         $service->confirm($purchase, $request->user(), $this->revision($request));
 
-        return redirect()->route('purchases.show', $purchase)->with('status', 'Purchase confirmed. Stock and average costs updated.');
+        return redirect()->route('purchases.show', $purchase)->with('status', 'Stock received. Quantities and average costs are updated.');
     }
 
     public function cancel(Request $request, Purchase $purchase, PurchaseService $service)

@@ -117,3 +117,22 @@ the option form used dropdowns and a status select, one option at a time.
   Low / Out badges; archiving moved into a calm "Stop selling this product" panel.
 - Forms: sizes and colours as tap chips, plain "Available for sale" switches, and
   **Save and add another**, which keeps the price and colour for the next size.
+
+## Stock: purchases
+
+**Found:** the purchase list had no status tabs, no unit counts and raw codes (`DRAFT`,
+`CONFIRMED`); the draft page said "Review purchase draft" but did not explain that
+confirming is what adds stock; the form needed a separate Search press for the supplier
+and every item, showed no totals until after saving, and used a dropdown for payment.
+
+**Changed:**
+- List: search by purchase number, invoice or supplier; All / Drafts / Received /
+  Cancelled tabs with counts; units per purchase; "Draft, not received" in amber so
+  forgotten drafts stand out; payment and date filters folded away; phone cards.
+- Draft page: a "Check the goods, then receive them" panel with **Receive stock**, Edit
+  and Cancel; the confirm dialog repeats the units and cost. Received and cancelled
+  purchases say what happened, when and by whom.
+- Form: supplier and product search as you type, with a "no match" line instead of
+  silence; a line total per item and a running units and cost total; Paid / Partly paid /
+  Not yet chips; Save stays disabled with the reason shown until the draft is complete.
+  On a phone, quantity and cost sit side by side.
