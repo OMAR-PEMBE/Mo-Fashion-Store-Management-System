@@ -6,6 +6,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\User;
 use App\Services\ExpenseService;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -17,15 +18,19 @@ class ExpenseController extends Controller
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'category_id' => ['nullable', 'integer'],
             'date_from' => ['nullable', 'date_format:Y-m-d'], 'date_to' => ['nullable', 'date_format:Y-m-d', ...($request->filled('date_from') ? ['after_or_equal:date_from'] : [])],
             'recorded_by' => ['nullable', 'integer']]);
-        $expenses = Expense::with(['category', 'recorder'])
+        $query = Expense::query()
             ->when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($q) => $q->where('expense_number', 'like', '%'.$value.'%')->orWhere('description', 'like', '%'.$value.'%')))
             ->when($filters['category_id'] ?? null, fn ($q, $value) => $q->where('expense_category_id', $value))
             ->when($filters['date_from'] ?? null, fn ($q, $value) => $q->where('expense_date', '>=', $value))
             ->when($filters['date_to'] ?? null, fn ($q, $value) => $q->where('expense_date', '<=', $value))
-            ->when($filters['recorded_by'] ?? null, fn ($q, $value) => $q->where('recorded_by', $value))
-            ->orderByDesc('expense_date')->orderByDesc('id')->paginate(15)->withQueryString();
+            ->when($filters['recorded_by'] ?? null, fn ($q, $value) => $q->where('recorded_by', $value));
+        $expenses = (clone $query)->with(['category', 'recorder'])->orderByDesc('expense_date')->orderByDesc('id')->paginate(15)->withQueryString();
+        // What the owner asks first: how much, and on what. Totals follow the same filters as the list.
+        $total = Money::round((clone $query)->sum('amount'));
+        $byCategory = (clone $query)->toBase()->selectRaw('expense_category_id, sum(amount) as total')->groupBy('expense_category_id')->orderByDesc('total')->get()
+            ->map(fn ($row) => ['id' => $row->expense_category_id, 'total' => Money::round($row->total)]);
 
-        return view('expenses.index', ['expenses' => $expenses, 'filters' => $filters,
+        return view('expenses.index', ['expenses' => $expenses, 'filters' => $filters, 'total' => $total, 'byCategory' => $byCategory,
             'categories' => ExpenseCategory::orderBy('name')->get(),
             'recorders' => User::whereIn('id', Expense::select('recorded_by'))->orderBy('name')->get()]);
     }
@@ -49,6 +54,11 @@ class ExpenseController extends Controller
     public function store(Request $request, ExpenseService $service)
     {
         $expense = $service->save($request->all(), $request->user());
+        if ($request->boolean('add_another')) {
+            // Entering a pile of receipts: keep the date and category, clear the amount.
+            return redirect()->route('expenses.create')->withInput($request->only('expense_date', 'expense_category_id'))
+                ->with('status', $expense->expense_number.' saved: '.Money::format($expense->amount).' for '.$expense->category->name.'.');
+        }
 
         return redirect()->route('expenses.show', $expense)->with('status', 'Expense recorded.');
     }

@@ -55,7 +55,7 @@ class ExpenseTest extends TestCase
         $this->assertSame($editor->id, $audit->user_id);
         $this->assertSame('25000.35', json_decode($audit->old_values, true)['amount']);
         $this->assertSame('0.30', json_decode($audit->new_values, true)['amount']);
-        $this->get('/expenses/'.$expense->id)->assertOk()->assertSee('25000.35')->assertSee('Electricity')->assertSee('&lt;script&gt;', false)->assertDontSee('<script>alert(1)</script>', false);
+        $this->get('/expenses/'.$expense->id)->assertOk()->assertSee('TZS 25,000.35')->assertSee('Electricity')->assertSee('&lt;script&gt;', false)->assertDontSee('<script>alert(1)</script>', false);
         $this->assertDatabaseCount('inventory_movements', 0);
         $this->assertDatabaseCount('purchases', 0);
         $this->delete('/expenses/'.$expense->id)->assertMethodNotAllowed();
@@ -185,5 +185,20 @@ class ExpenseTest extends TestCase
         $this->assertSame(1, $expense->fresh()->revision);
         $this->assertDatabaseMissing('expense_categories', ['name' => 'Rollback']);
         $this->assertEquals($number, DB::table('document_sequences')->where('document_type', 'EXPENSE')->value('current_number'));
+    }
+    public function test_list_totals_follow_filters_and_record_another_keeps_date_and_category(): void
+    {
+        $electricity = ExpenseCategory::where('name', 'Electricity')->value('id');
+        $this->post('/expenses', $this->input(['add_another' => 1]))
+            ->assertRedirect('/expenses/create')->assertSessionHasInput('expense_date', '2026-09-23')->assertSessionHasInput('expense_category_id', $electricity)
+            ->assertSessionHas('status', fn ($message) => str_contains($message, 'TZS 25,000.35 for Electricity'));
+        $this->get('/expenses/create')->assertOk()->assertDontSee('value="expense:test"', false);
+        $rent = ExpenseCategory::where('name', '!=', 'Electricity')->firstOrFail();
+        $this->post('/expenses', $this->input(['request_key' => 'expense:two', 'amount' => '100000', 'expense_category_id' => $rent->id, 'expense_date' => '2026-08-02']));
+
+        $this->get('/expenses')->assertOk()->assertViewHas('total', '125000.35')->assertSee('TZS 125,000.35')
+            ->assertViewHas('byCategory', fn ($rows) => $rows->first()['id'] === $rent->id && $rows->first()['total'] === '100000.00');
+        $this->get('/expenses?date_from=2026-09-01&date_to=2026-09-30')->assertViewHas('total', '25000.35');
+        $this->get('/expense-categories')->assertOk()->assertSee('TZS 100,000')->assertSee('Not used yet');
     }
 }

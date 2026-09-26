@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 
 class Money
 {
@@ -18,5 +19,11 @@ class Money
         $text = ($currency ? config('business.currency').' ' : '').$text;
 
         return $amount->isNegative() ? '-'.$text : $text;
+    }
+
+    /** Database SUM() results can come back as floats; this returns an exact two-decimal string. */
+    public static function round(float|int|string|null $value): string
+    {
+        return (string) BigDecimal::of(is_float($value) ? sprintf('%.4F', $value) : (string) ($value ?? '0'))->toScale(2, RoundingMode::HalfUp);
     }
 }

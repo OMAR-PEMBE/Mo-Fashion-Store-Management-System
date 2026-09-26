@@ -181,3 +181,29 @@ products yet.
 - A progress bar ("13 counted · 0 still to count"), and empty states for "Everything is
   counted" (with a link to Purchases), "No products to count yet" and no search match.
 - The single-item screens remain for old links, restyled to match.
+
+## Money: expenses and expense categories
+
+**Found:** the owner's main question, "how much did we spend this month, and on what?", was
+not answered anywhere, because the list had no totals. Six filters were always open. The form
+used a category dropdown and a bare number box; the detail page showed history as raw
+before/after tables with database timestamps. Categories were loose cards with no sense of
+how much each was used.
+
+**Changed:**
+- List: This month / Last month / This year / All time chips; a summary card with the
+  total spent for the current filters and a bar per category (tap one to filter to it);
+  search, with category, person and custom dates folded away; date-first table and
+  phone cards.
+- Form: a large amount box with a live "TZS 18,500" read-back, categories as tap chips,
+  Today / Yesterday next to the date, and **Save and record another**, which keeps the date
+  and category for the next receipt and says what was saved.
+- The amount and date boxes now keep anything typed before the page's script finishes
+  loading (it used to reset them). Other script-driven screens (point of sale, returns)
+  still build their inputs from script state; worth the same change if slow phones show it.
+- Detail page: the title says what and how much ("Marketing · TZS 12,000"); history is a
+  timeline in words ("Amount: TZS 12,000 → TZS 11,000", "Date paid: 26 Sep → 25 Sep").
+- Categories: In use / Switched off tabs with counts; each shows how often it was used,
+  when last, and the all-time total; the form uses a plain "Available for new expenses"
+  switch.
+- `Money::round()` turns database sums into exact two-decimal strings.
