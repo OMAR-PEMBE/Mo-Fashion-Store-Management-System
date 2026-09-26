@@ -195,4 +195,13 @@ class ReferenceDataTest extends TestCase
         $this->app['env'] = 'local';
         $this->post('/reference-data/categories', ['name' => 'Test', 'slug' => 'test', 'is_active' => 1])->assertStatus(419);
     }
+    public function test_lists_show_usage_and_new_sizes_go_to_the_end(): void
+    {
+        $this->actingAs($this->staff());
+        $last = (int) Size::max('sort_order');
+        $this->get('/reference-data/sizes/create')->assertOk()->assertSee('value="'.($last + 10).'"', false);
+        $this->get('/reference-data/sizes')->assertOk()->assertSee('Not used yet')->assertSee('Catalogue setup')
+            ->assertViewHas('counts', fn ($counts) => $counts['active'] === Size::where('is_active', true)->count());
+        $this->get('/reference-data/colours')->assertOk()->assertSee('background-color: black', false);
+    }
 }

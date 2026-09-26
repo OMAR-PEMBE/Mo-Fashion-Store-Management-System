@@ -1,55 +1,61 @@
+@php
+    $about = [
+        'categories' => 'Group products so they are easy to find and report on, for example Dresses or Denim.',
+        'sizes' => 'The sizes you sell, in the order they should appear everywhere (S before M before L).',
+        'colours' => 'Colour names used on product options.',
+    ];
+    $usedBy = fn ($n) => $type->value === 'categories' ? \Illuminate\Support\Str::plural('product', $n) : \Illuminate\Support\Str::plural('product option', $n);
+    // Display only: a swatch when the name is a plain colour word browsers know (e.g. "Navy").
+    $swatch = fn ($name) => preg_match('/^[a-z]{3,20}$/', $word = strtolower(str_replace(' ', '', $name))) ? $word : null;
+@endphp
 <x-layouts.app :title="$type->label()">
-    <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-            <p class="mb-2 text-sm text-text-secondary">Catalogue setup</p>
-            <h1 class="text-3xl font-bold">{{ $type->label() }}</h1>
-            <p class="mt-3 text-sm text-text-secondary">Manage the {{ strtolower($type->label()) }} used to organise your products.</p>
+    <x-page-header title="Catalogue setup" :description="$about[$type->value]">
+        <x-slot:actions><x-action-link :href="route('reference.create', $type->value)">Add {{ $type->singular() }}</x-action-link></x-slot:actions>
+    </x-page-header>
+
+    <nav aria-label="Catalogue lists" class="mb-5 flex gap-1 border-b border-border">
+        @foreach(\App\Enums\ReferenceType::cases() as $case)
+            <a href="{{ route('reference.index', $case->value) }}" @if($case === $type) aria-current="page" @endif
+                @class(['-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold', 'border-primary text-text-primary' => $case === $type, 'border-transparent text-text-secondary hover:text-text-primary' => $case !== $type])>{{ $case->label() }}</a>
+        @endforeach
+    </nav>
+
+    <form method="GET" class="mb-4" role="search">
+        @if($filters['status'] ?? null)<input type="hidden" name="status" value="{{ $filters['status'] }}">@endif
+        <div class="relative max-w-md">
+            <label for="reference-search" class="sr-only">Search {{ strtolower($type->label()) }}</label>
+            <svg class="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="reference-search" name="q" type="search" value="{{ $filters['q'] ?? '' }}" maxlength="150" placeholder="{{ $type->value === 'colours' ? 'Colour name' : 'Name or code' }}" class="min-h-11 w-full rounded-lg border border-border bg-surface py-2 pr-3 pl-11 text-sm">
         </div>
-        <a href="{{ route('reference.create', $type->value) }}" class="inline-flex min-h-11 items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold hover:bg-primary-hover">Add {{ $type->singular() }}</a>
-    </div>
-    
-    <form method="GET" class="mb-6 grid items-end gap-4 rounded-xl border border-border bg-surface p-5 sm:grid-cols-[1fr_180px_auto]">
-        <x-input name="q" label="Search" :value="$filters['q'] ?? ''" :placeholder="$type->value === 'colours' ? 'Colour name' : 'Name or code'" maxlength="150" />
-        <x-select name="status" label="Status">
-            <option value="">All statuses</option>
-            <option value="active" @selected(($filters['status'] ?? '') === 'active')>Active</option>
-            <option value="inactive" @selected(($filters['status'] ?? '') === 'inactive')>Inactive</option>
-        </x-select>
-        <div class="flex items-center gap-3"><x-button type="submit" variant="secondary">Filter</x-button><a href="{{ route('reference.index', $type->value) }}" class="text-sm underline">Clear</a></div>
     </form>
-    <div class="overflow-hidden rounded-xl border border-border bg-surface">
+    <x-filter-tabs :options="['' => 'All', 'active' => 'In use', 'inactive' => 'Switched off']" :counts="$counts" class="mb-5" />
+
+    <div class="overflow-hidden rounded-2xl border border-border bg-surface">
         @if($records->isEmpty())
-            <div class="px-6 py-14 text-center">
-                <h2 class="font-semibold">No {{ strtolower($type->label()) }} found</h2>
-                <p class="mt-2 text-sm text-text-secondary">Add a {{ $type->singular() }} or change your filters.</p>
+            <div class="p-10 text-center">
+                <p class="font-semibold">No {{ strtolower($type->label()) }} found</p>
+                <p class="mt-1 text-sm text-text-secondary">Add a {{ $type->singular() }} or change your search.</p>
             </div>
         @else
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <caption class="sr-only">{{ $type->label() }} and their current status</caption>
-                    <thead class="border-b border-border bg-background"><tr>
-                        <th scope="col" class="px-5 py-4 font-medium">Name</th>
-                        @if($type->value !== 'colours')<th scope="col" class="px-5 py-4 font-medium">{{ ucfirst($type->identifier()) }}</th>@endif
-                        @if($type->value === 'sizes')<th scope="col" class="px-5 py-4 font-medium">Order</th>@endif
-                        <th scope="col" class="px-5 py-4 font-medium">Status</th>
-                        <th scope="col" class="px-5 py-4 font-medium"><span class="sr-only">Actions</span></th>
-                    </tr></thead>
-                    <tbody class="divide-y divide-border">
-                    @foreach($records as $record)
-                        <tr class="hover:bg-selected/50">
-                            <th scope="row" class="max-w-xs break-words px-5 py-4 font-medium">
-                                {{ $record->name }}
-                            </th>
-                            @if($type->value !== 'colours')<td class="max-w-xs break-all px-5 py-4 text-text-secondary">{{ $record->{$type->identifier()} }}</td>@endif
-                            @if($type->value === 'sizes')<td class="px-5 py-4">{{ $record->sort_order }}</td>@endif
-                            <td class="px-5 py-4"><x-badge :tone="$record->is_active ? 'success' : 'warning'">{{ $record->is_active ? 'Active' : 'Inactive' }}</x-badge></td>
-                            <td class="px-5 py-4 text-right"><a href="{{ route('reference.edit', [$type->value, $record->id]) }}" class="inline-flex min-h-11 items-center font-medium underline underline-offset-4" aria-label="Edit {{ $record->name }}">Edit</a></td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            </div>
-            <div class="border-t border-border p-5">{{ $records->links() }}</div>
+            <ul class="divide-y divide-border">
+                @foreach($records as $record)
+                    @php $used = (int) ($usage[$record->id] ?? 0); @endphp
+                    <li @class(['relative flex items-center gap-4 px-5 py-3.5 hover:bg-selected/50', 'opacity-70' => ! $record->is_active])>
+                        @if($type->value === 'colours')
+                            <span class="size-7 shrink-0 rounded-full border border-border" @if($colour = $swatch($record->name)) style="background-color: {{ $colour }}" @endif aria-hidden="true"></span>
+                        @elseif($type->value === 'sizes')
+                            <span class="flex h-7 min-w-10 shrink-0 items-center justify-center rounded-md bg-background px-2 text-xs font-bold" aria-hidden="true">{{ $record->code }}</span>
+                        @endif
+                        <div class="min-w-0 flex-1">
+                            <a href="{{ route('reference.edit', [$type->value, $record->id]) }}" class="row-link break-words" aria-label="Edit {{ $record->name }}"><span>{{ $record->name }}</span></a>
+                            @unless($record->is_active)<x-badge tone="neutral" class="ml-2">Switched off</x-badge>@endunless
+                            @if($type->value === 'categories' && $record->description)<p class="text-sm break-words text-text-secondary">{{ \Illuminate\Support\Str::limit($record->description, 120) }}</p>@endif
+                        </div>
+                        <p class="shrink-0 text-right text-xs text-text-secondary">{{ $used ? number_format($used).' '.$usedBy($used) : 'Not used yet' }}</p>
+                    </li>
+                @endforeach
+            </ul>
         @endif
+        @if($records->hasPages())<div class="border-t border-border p-4">{{ $records->links() }}</div>@endif
     </div>
 </x-layouts.app>

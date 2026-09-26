@@ -300,3 +300,21 @@ threshold" were technical names.
 - Caught during the browser check: my first version stopped sending the fixed currency
   and time zone, so saving failed. They are hidden fields now, and a new test checks that
   the rendered form includes every field the save needs.
+
+## Admin: catalogue setup (categories, sizes, colours)
+
+**Found:** three separate lists with no way between them; nothing showed whether an entry
+was used by any product; the form asked for a "slug" or code typed by hand and a status
+dropdown; a new size defaulted to display order 0 (so it jumped to the top); colours were
+plain names.
+
+**Changed:**
+- One "Catalogue setup" page with Categories / Sizes / Colours tabs, a short line on what
+  each list is for, search, and In use / Switched off tabs with counts.
+- Each entry shows how many products (categories) or product options (sizes, colours)
+  use it, or "Not used yet", so it is clear what is safe to switch off.
+- Sizes show their code as a small tag; colours show a swatch when the name is a plain
+  colour word (display only; the stored hex colour stays switched off as before).
+- Forms: the category short code and size code fill in from the name as you type (typing
+  your own stops that); new sizes start at the end of the list; "Available for new
+  products" switch instead of a status dropdown; example placeholders.
