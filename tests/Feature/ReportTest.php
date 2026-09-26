@@ -76,6 +76,8 @@ class ReportTest extends TestCase
             'items' => [['product_variant_id' => $first->id, 'quantity' => 2, 'unit_price' => '100.30'], ['product_variant_id' => $second->id, 'quantity' => 1, 'unit_price' => '100.30']]], $this->admin);
         $this->get('/reports/sales?product=JEANS&customer=Amina&payment_method=CASH')->assertOk()->assertSee('300.90')
             ->assertViewHas('rows', fn ($rows) => $rows->total() === 1);
+        $this->get('/reports/sales?product=JEANS')->assertViewHas('totals', ['amount' => '300.90'])->assertSee('Total, all 1');
+        $this->get('/reports/customers?spent_min=300.90')->assertViewHas('totals', ['spent' => '300.90']);
         $this->get('/reports/sales?variant=missing')->assertSee('No matching records.');
         $this->get('/reports/sales?status=CANCELLED')->assertDontSee($sale->sale_number);
         $this->get('/reports/customers?spent_min=300.90&purchase_count_min=1')->assertOk()->assertSee('Amina')->assertSee('300.90');

@@ -207,3 +207,28 @@ how much each was used.
   when last, and the all-time total; the form uses a plain "Available for new expenses"
   switch.
 - `Money::round()` turns database sums into exact two-decimal strings.
+
+## Money: reports
+
+**Found:** the hub was nine identical "Open X report" cards that did not say what each one
+answers. Report pages opened with every filter spread out and statuses in raw codes
+(`COMPLETED`, `PARTIALLY_REFUNDED`). List reports had no totals. The profit report showed
+twelve equal-weight boxes, so it was hard to see how "Estimated Net Profit" was reached.
+
+**Changed:**
+- Hub: grouped into Money / Stock / Customers / After-sales, each report described by the
+  question it answers ("Did we make money this month?"), with Profit highlighted.
+  "Inventory" is now called "Stock on hand".
+- Report pages: the title plus the period in words; This month / Last month / This year
+  chips beside the two dates; status as a picker that applies straight away; all other
+  filters under "Narrow down" (opens when one is in use); Download CSV with an icon.
+- Tables: status badges and payment names in words, readable dates, numbers
+  right-aligned, and a **Total** row for every money column covering every match (not
+  just the page).
+- Profit is now a **profit statement**: Money in (sales + extra paid on exchanges − refunds
+  = net sales), Cost of the goods sold (with returns back in stock subtracted), gross
+  profit with its margin, running costs, and the estimated net profit in green or red.
+  A side note says in words whether the shop made a profit, lists links to check each
+  source, and explains the method in a fold-out.
+- The explanation notes for list reports moved into an "About this report" fold-out.
+- CSV downloads are unchanged (same columns, exact values).

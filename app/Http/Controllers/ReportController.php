@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ReportService;
 use App\Services\SaleService;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -23,6 +24,11 @@ class ReportController extends Controller
     {
         $report = $service->prepare($request->user(), $type, $request->query());
         $rows = $report['query']?->paginate(25)->withQueryString();
+        // Totals across every match, not just this page, for each money column.
+        $totals = [];
+        foreach ($report['query'] ? $report['money'] : [] as $column) {
+            $totals[$column] = Money::round(DB::query()->fromSub((clone $report['query'])->reorder(), 'report_rows')->sum($column));
+        }
         if ($rows) {
             $rows->through(fn ($row) => ['id' => $row->id, 'values' => $service->row($row, $report['columns'], $report['money'])]);
         }
@@ -41,7 +47,7 @@ class ReportController extends Controller
         }
         unset($report['query']);
 
-        return response()->view('reports.show', $report + compact('type', 'rows', 'options'))->header('Cache-Control', 'private, no-store');
+        return response()->view('reports.show', $report + compact('type', 'rows', 'options', 'totals'))->header('Cache-Control', 'private, no-store');
     }
 
     public function export(Request $request, string $type, ReportService $service)
