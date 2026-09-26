@@ -31,6 +31,8 @@ class SecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set('Content-Security-Policy', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'");
         $response->headers->set('Cache-Control', 'no-store, private');
+        // Internal staff system: keep every page, including sign-in, out of search results.
+        $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         if ($production && $request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=15552000');
         }

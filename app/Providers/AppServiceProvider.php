@@ -30,6 +30,11 @@ class AppServiceProvider extends ServiceProvider
         View::composer(['components.layouts.app', 'sales.show'], function ($view) {
             $view->with('business', app(BusinessSettingsService::class)->values());
         });
+        // Sign-in and error pages must still render if settings cannot be read.
+        View::composer('components.layouts.guest', function ($view) {
+            $view->with('businessName', rescue(fn () => app(BusinessSettingsService::class)->values()['business_name'],
+                BusinessSettingsService::DEFAULTS['business_name'], report: false));
+        });
         Password::defaults(fn () => Password::min(10)->letters()->numbers());
         foreach (ReferenceType::cases() as $type) {
             Gate::policy($type->model(), ReferenceDataPolicy::class);

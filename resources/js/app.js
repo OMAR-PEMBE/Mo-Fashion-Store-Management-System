@@ -48,3 +48,42 @@ window.purchaseForm = (supplier, lines, lookupUrl) => ({
         target.request++;
     },
 });
+
+// Show/hide toggles for <x-input revealable>. Buttons stay hidden until this script runs.
+document.querySelectorAll('[data-password-toggle]').forEach(button => { button.hidden = false; });
+document.addEventListener('click', event => {
+    const button = event.target.closest('[data-password-toggle]');
+    const input = button && document.getElementById(button.dataset.passwordToggle);
+    if (!input) return;
+    const reveal = input.type === 'password';
+    input.type = reveal ? 'text' : 'password';
+    button.setAttribute('aria-pressed', String(reveal));
+    button.setAttribute('aria-label', reveal ? 'Hide password' : 'Show password');
+    button.querySelector('[data-icon="show"]').classList.toggle('hidden', reveal);
+    button.querySelector('[data-icon="hide"]').classList.toggle('hidden', !reveal);
+    input.focus();
+});
+
+// Forms marked data-busy disable their submit button once sent, preventing double submissions.
+document.addEventListener('submit', event => {
+    // Revealed passwords go back to password fields so browsers do not store them as form history.
+    event.target.querySelectorAll('[data-password-toggle]').forEach(toggle => {
+        const input = document.getElementById(toggle.dataset.passwordToggle);
+        if (input) input.type = 'password';
+    });
+    const button = event.target.matches('[data-busy]') && event.target.querySelector('[data-busy-label]');
+    if (!button || event.defaultPrevented) return;
+    button.dataset.idleLabel = button.textContent;
+    button.textContent = button.dataset.busyLabel;
+    button.setAttribute('aria-busy', 'true');
+    // Deferred so the browser has already captured the submission.
+    setTimeout(() => { button.disabled = true; });
+});
+// Pages restored from the back/forward cache must be usable again.
+window.addEventListener('pageshow', () => {
+    document.querySelectorAll('[data-busy-label][aria-busy="true"]').forEach(button => {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.textContent = button.dataset.idleLabel;
+    });
+});

@@ -51,9 +51,43 @@ class AuthenticationTest extends TestCase
         $unassigned = User::factory()->create();
         foreach ([$active->email, $inactive->email, $unassigned->email, 'missing@example.com'] as $email) {
             $this->post('/login', ['email' => $email, 'password' => $email === $active->email ? 'incorrect' : 'password'])
-                ->assertSessionHasErrors(['email' => 'Invalid credentials.']);
+                ->assertSessionHasErrors(['credentials' => 'The email or password is incorrect. Check both and try again.']);
             $this->assertGuest();
         }
+    }
+
+    public function test_sign_in_page_guides_staff_and_explains_failures_without_blaming_a_field(): void
+    {
+        $this->get('/login')->assertOk()
+            ->assertSee('<title>Sign in · Mo Fashion Store</title>', false)
+            ->assertSee('Use the email and password your administrator gave you.')
+            ->assertSee('Forgot your password or need an account? Ask your administrator.')
+            ->assertSee('data-password-toggle="password"', false)
+            ->assertSee('data-busy-label="Signing in…"', false)
+            ->assertSee('<meta name="robots" content="noindex, nofollow">', false)
+            ->assertDontSee('role="alert"', false)
+            ->assertSeeInOrder(['id="email"', 'autofocus', 'id="password"'], false);
+
+        $page = $this->followingRedirects()->from('/login')
+            ->post('/login', ['email' => 'Missing@Example.com', 'password' => 'incorrect'])->assertOk();
+        $page->assertSee('role="alert"', false)->assertSee('The email or password is incorrect. Check both and try again.')
+            ->assertSee('value="Missing@Example.com"', false)->assertDontSee('aria-invalid', false);
+        // The kept email means the cursor starts in the password field instead.
+        $this->assertMatchesRegularExpression('/<input id="password"[^>]*autofocus/', $page->getContent());
+        $this->assertDoesNotMatchRegularExpression('/<input id="email"[^>]*autofocus/', $page->getContent());
+
+        // Genuine field mistakes are still shown on the field.
+        $this->followingRedirects()->from('/login')->post('/login', ['email' => 'not-an-email', 'password' => 'x'])
+            ->assertSee('aria-invalid="true"', false)->assertDontSee('role="alert"', false);
+    }
+
+    public function test_sign_in_page_shows_business_name_and_survives_unreadable_settings(): void
+    {
+        DB::table('system_settings')->updateOrInsert(['key' => 'business_name'], ['value' => 'Kariakoo Styles', 'type' => 'string']);
+        $this->get('/login')->assertOk()->assertSee('<title>Sign in · Kariakoo Styles</title>', false)->assertSee('Kariakoo Styles');
+
+        DB::statement('DROP TABLE system_settings');
+        $this->get('/login')->assertOk()->assertSee('Mo Fashion Store');
     }
 
     public function test_guests_are_redirected_and_json_requests_are_unauthenticated(): void
@@ -89,7 +123,7 @@ class AuthenticationTest extends TestCase
     {
         $user = $this->staff();
         for ($i = 0; $i < 5; $i++) {
-            $this->post('/login', ['email' => $user->email, 'password' => 'wrong'])->assertSessionHasErrors('email');
+            $this->post('/login', ['email' => $user->email, 'password' => 'wrong'])->assertSessionHasErrors('credentials');
         }
         $this->postJson('/login', ['email' => $user->email, 'password' => 'password'])->assertStatus(429);
         $this->assertGuest();

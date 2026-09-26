@@ -27,6 +27,8 @@
 @layer base {
     body { @apply bg-background font-sans text-text-primary antialiased; }
     button, a, input, select, textarea { @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-info; }
+    /* Fields hug their outline so focus reads as one element, not a box inside a box. */
+    input, select, textarea { @apply focus-visible:outline-offset-0; }
     button:not(:disabled), summary { cursor: pointer; }
     [x-cloak] { display: none !important; }
 }

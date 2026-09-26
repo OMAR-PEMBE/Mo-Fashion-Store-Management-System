@@ -29,10 +29,11 @@ class LoginRequest extends FormRequest
 
     public function authenticate(): void
     {
+        // Sign-in failures use their own key so the page shows one banner instead of blaming a field.
         $key = 'login:'.hash('sha256', $this->email.'|'.$this->ip());
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages([
-                'email' => 'Too many attempts. Try again in '.RateLimiter::availableIn($key).' seconds.',
+                'credentials' => 'Too many tries. Please wait about a minute, then try again.',
             ])->status(429);
         }
 
@@ -41,7 +42,7 @@ class LoginRequest extends FormRequest
             fn ($user) => $user->canAccessWorkspace(),
         )) {
             RateLimiter::hit($key, 60);
-            throw ValidationException::withMessages(['email' => 'Invalid credentials.']);
+            throw ValidationException::withMessages(['credentials' => 'The email or password is incorrect. Check both and try again.']);
         }
 
         RateLimiter::clear($key);

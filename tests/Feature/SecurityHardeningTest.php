@@ -34,7 +34,7 @@ class SecurityHardeningTest extends TestCase
         foreach (['/login', '/missing-page', '/reset-password/example-token'] as $url) {
             $response = $this->get($url);
             $response->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('X-Frame-Options', 'SAMEORIGIN')
-                ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+                ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')->assertHeader('X-Robots-Tag', 'noindex, nofollow')
                 ->assertHeader('Content-Security-Policy', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'")
                 ->assertHeaderMissing('Strict-Transport-Security');
             $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));

@@ -7,6 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#FAF8F3">
     <title>{{ $title }} · {{ $business['business_name'] }}</title>
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
