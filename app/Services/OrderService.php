@@ -51,6 +51,7 @@ class OrderService
             if (ProductVariant::available()->whereIn('id', $ids)->whereHas('product', fn ($q) => $q->available()->whereNull('deleted_at'))->count() !== count($ids)) {
                 throw ValidationException::withMessages(['items' => 'Select active product variants.']);
             }
+            app(SaleService::class)->enforcePricePolicy($data, $actor->fresh(), ProductVariant::whereIn('id', $ids)->get()->keyBy('id'));
             $totals = app(SaleService::class)->calculateTotals($data['items']);
             $number = $sequence->current_number + 1;
             DB::table('document_sequences')->where('id', $sequence->id)->update(['current_number' => $number, 'updated_at' => now()]);

@@ -50,7 +50,7 @@ class ProductCatalogueDatabaseTest extends TestCase
                     $this->assertStringContainsString('variants_combination_unique', $exception->getMessage());
                 }
             }
-            $this->actingAs($user)->get('/products/'.$product->id)->assertOk()->assertSee('9999999999999.99');
+            $this->actingAs($user)->get('/products/'.$product->id)->assertOk()->assertSee('9,999,999,999,999.99');
             app(OpeningStockService::class)->confirm($variant, ['quantity' => 5, 'unit_cost' => '20000'], $user);
             $black = Colour::where('code', 'BLACK')->firstOrFail();
             $service->saveVariant($product, ['sku' => $variant->sku, 'size_id' => $size->id, 'colour_id' => $black->id,

@@ -51,7 +51,7 @@ class ExchangeTest extends TestCase
 
     private function data(array $item = [], string $key = 'sale:test'): array
     {
-        return ['request_key' => $key, 'payment_method' => 'CASH', 'items' => [array_replace(['product_variant_id' => $this->variant->id, 'quantity' => 2, 'unit_price' => '45000.00', 'discount_amount' => '1000.00'], $item)]];
+        return ['request_key' => $key, 'payment_method' => 'CASH', 'notes' => 'Regular customer discount', 'items' => [array_replace(['product_variant_id' => $this->variant->id, 'quantity' => 2, 'unit_price' => '45000.00', 'discount_amount' => '1000.00'], $item)]];
     }
 
     private function stock(int $quantity = 10): void

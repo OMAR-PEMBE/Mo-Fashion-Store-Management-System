@@ -1,4 +1,5 @@
 // Livewire initializes its bundled Alpine instance through @livewireScripts.
+import './pos';
 window.saleForm = (customer, lines, lookupUrl, allowUnavailable = false) => ({
     customer, lines, query: '', customersQuery: '', results: [], customers: [], error: '', searchRequest: 0,
     async search(kind) {

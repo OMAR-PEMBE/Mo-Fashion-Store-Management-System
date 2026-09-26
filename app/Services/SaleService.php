@@ -47,6 +47,33 @@ class SaleService
         return $data;
     }
 
+    /**
+     * Counter pricing policy: items sell at their catalogue price unless the actor may override it,
+     * and any discount needs a written reason in the notes. Orders converted to sales keep the
+     * prices approved when the order was created.
+     *
+     * @param  iterable<int, ProductVariant>  $variants  keyed by variant id
+     */
+    public function enforcePricePolicy(array $data, User $actor, iterable $variants): void
+    {
+        $variants = collect($variants);
+        $canOverride = $actor->hasPermission('sales.override_price');
+        $errors = [];
+        foreach ($data['items'] as $index => $item) {
+            $variant = $variants->get($item['product_variant_id']);
+            if (! $canOverride && $variant && ! BigDecimal::of($item['unit_price'])->isEqualTo(BigDecimal::of((string) $variant->selling_price))) {
+                $errors['items'][] = $variant->sku.': sell at the catalogue price. Only an administrator can change a price.';
+            }
+        }
+        $discounted = collect($data['items'])->contains(fn ($item) => BigDecimal::of($item['discount_amount'])->isPositive());
+        if ($discounted && trim((string) $data['notes']) === '') {
+            $errors['notes'] = 'Give a reason for the discount.';
+        }
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
     public function calculateTotals(array $items): array
     {
         $subtotal = $discount = $cogs = BigDecimal::of('0.00');
@@ -134,6 +161,9 @@ class SaleService
             $parents = ProductVariant::withTrashed()->whereIn('id', $ids)->pluck('product_id')->unique()->sort();
             Product::withTrashed()->whereIn('id', $parents)->orderBy('id')->lockForUpdate()->get();
             $variants = ProductVariant::withTrashed()->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            if (! $order) {
+                $this->enforcePricePolicy($data, $actor->fresh(), $variants);
+            }
             $lines = [];
             foreach ($data['items'] as $item) {
                 $variant = $variants->get($item['product_variant_id']);

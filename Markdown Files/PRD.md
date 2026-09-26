@@ -572,6 +572,16 @@ After completion:
 
 The original business case requires sales to reduce stock automatically.
 
+## Counter Pricing Rule (owner-approved 2026-09-26)
+
+- Items sell at their catalogue selling price. Only users with the `sales.override_price`
+  permission (Administrators by default) may change a line's unit price.
+- Any line discount requires a written reason, stored in the sale or order notes.
+- The rule applies to counter sales and new orders. Converting a paid order to a sale
+  keeps the price approved when the order was created.
+- The screen explains the rule, but the server enforces it; a submitted change that
+  breaks the rule is rejected and the cart is kept.
+
 ---
 
 # 22. Sale Fields

@@ -32,14 +32,17 @@ class SaleController extends Controller
         $raw = old('items', []);
         $raw = is_array($raw) ? array_slice($raw, 0, 100) : [];
         $ids = collect($raw)->filter(fn ($i) => is_array($i))->pluck('product_variant_id')->filter(fn ($id) => is_scalar($id) && ctype_digit((string) $id));
-        $variants = ProductVariant::withTrashed()->with('product')->whereIn('id', $ids)->get()->keyBy('id');
+        $variants = ProductVariant::withTrashed()->with(['product', 'size', 'colour', 'inventory'])->whereIn('id', $ids)->get()->keyBy('id');
         $lines = [];
         foreach ($raw as $item) {
             if (! is_array($item)) {
                 continue;
             }
             $id = is_scalar($item['product_variant_id'] ?? null) ? (string) $item['product_variant_id'] : '';
-            $line = ['product_variant_id' => $id, 'label' => isset($variants[$id]) ? $variants[$id]->sku.' · '.$variants[$id]->product->name : 'Unknown variant'];
+            $variant = $variants[$id] ?? null;
+            $line = ['product_variant_id' => $id, 'label' => $variant ? $variant->sku.' · '.$variant->product->name : 'Unknown variant',
+                'name' => $variant?->product->name ?? 'Unknown item', 'variant' => collect([$variant?->size?->name, $variant?->colour?->name])->filter()->join(' · '),
+                'sku' => $variant?->sku ?? '', 'catalogue_price' => $variant?->selling_price ?? '0.00', 'available' => $variant?->inventory?->available_quantity ?? 0];
             foreach (['quantity', 'unit_price', 'discount_amount'] as $field) {
                 $line[$field] = is_scalar($item[$field] ?? null) ? (string) $item[$field] : '0';
             }
@@ -47,10 +50,10 @@ class SaleController extends Controller
         }
         $customerId = old('customer_id');
         $customer = is_scalar($customerId) ? Customer::find($customerId) : null;
-        $selectedCustomer = ['id' => $customer?->id ?? '', 'label' => $customer?->full_name ?? 'Walk-in'];
+        $selectedCustomer = ['id' => $customer?->id ?? '', 'label' => $customer?->full_name ?? 'Walk-in customer', 'detail' => $customer?->customer_code ?? ''];
         $requestKey = old('request_key', (string) Str::uuid());
 
-        return view('sales.pos', compact('lines', 'selectedCustomer', 'requestKey'));
+        return view('sales.pos', compact('lines', 'selectedCustomer', 'requestKey') + ['canOverridePrice' => auth()->user()->hasPermission('sales.override_price')]);
     }
 
     public function lookup(Request $request)
@@ -62,19 +65,24 @@ class SaleController extends Controller
 
             return Customer::where('is_active', true)->where(fn ($q) => $q->where('full_name', 'like', '%'.$search.'%')->orWhere('customer_code', 'like', '%'.$search.'%')
                 ->when($digits !== '', fn ($q) => $q->orWhere('phone', 'like', '%'.$digits.'%')->orWhere('whatsapp_number', 'like', '%'.$digits.'%')))
-                ->orderBy('full_name')->limit(20)->get()->map(fn ($customer) => ['id' => $customer->id, 'label' => $customer->full_name.' · '.$customer->customer_code]);
+                ->orderBy('full_name')->limit(20)->get()->map(fn ($customer) => ['id' => $customer->id, 'label' => $customer->full_name.' · '.$customer->customer_code,
+                    'name' => $customer->full_name, 'detail' => collect([$customer->customer_code, $customer->phone])->filter()->join(' · ')]);
         }
 
         return ProductVariant::available()->whereHas('product', fn ($q) => $q->available()->whereNull('deleted_at'))
             ->with(['product', 'size', 'colour', 'inventory'])->where(fn ($q) => $q->where('sku', 'like', '%'.$search.'%')->orWhereHas('product', fn ($q) => $q->where('name', 'like', '%'.$search.'%')))
-            ->orderBy('sku')->limit(20)->get()->map(fn ($v) => ['id' => $v->id, 'label' => $v->sku.' · '.$v->product->name.' · '.($v->size?->name ?? 'One size').' / '.($v->colour?->name ?? 'No colour'), 'unit_price' => $v->selling_price, 'available' => $v->inventory?->available_quantity ?? 0]);
+            ->orderBy('sku')->limit(20)->get()->map(fn ($v) => ['id' => $v->id, 'label' => $v->sku.' · '.$v->product->name.' · '.($v->size?->name ?? 'One size').' / '.($v->colour?->name ?? 'No colour'),
+                'name' => $v->product->name, 'variant' => collect([$v->size?->name, $v->colour?->name])->filter()->join(' · '), 'sku' => $v->sku,
+                'unit_price' => $v->selling_price, 'available' => $available = $v->inventory?->available_quantity ?? 0, 'low' => $available > 0 && $available <= $v->low_stock_threshold]);
     }
 
     public function review(Request $request, SaleService $service)
     {
         $data = $service->validate($request->all());
-        $variants = ProductVariant::withTrashed()->with('product')->whereIn('id', array_column($data['items'], 'product_variant_id'))->get()->keyBy('id');
+        $variants = ProductVariant::withTrashed()->with(['product', 'size', 'colour'])->whereIn('id', array_column($data['items'], 'product_variant_id'))->get()->keyBy('id');
         abort_unless($variants->count() === count($data['items']), 422, 'A cart variant no longer exists.');
+        // Early feedback on the cart; completion enforces the same policy under lock.
+        $service->enforcePricePolicy($data, $request->user(), $variants);
         $customer = $data['customer_id'] ? Customer::where('is_active', true)->find($data['customer_id']) : null;
         abort_if($data['customer_id'] && ! $customer, 422, 'Choose an active customer.');
         $totals = $service->calculateTotals($data['items']);

@@ -54,6 +54,11 @@ class CustomerController extends Controller
     public function store(Request $request, CustomerService $service)
     {
         $customer = $service->save($request->all(), $request->user());
+        // The POS registers customers inline and selects them without leaving the sale.
+        if ($request->expectsJson()) {
+            return response()->json(['id' => $customer->id, 'label' => $customer->full_name.' · '.$customer->customer_code,
+                'name' => $customer->full_name, 'detail' => $customer->customer_code], 201);
+        }
 
         return redirect()->route('customers.show', $customer)->with('status', 'Customer created.');
     }

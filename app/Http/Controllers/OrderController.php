@@ -25,7 +25,7 @@ class OrderController extends Controller
     {
         $view = app(SaleController::class)->create()->with('isOrder', true);
         if (! $view->getData()['selectedCustomer']['id']) {
-            $view->with('selectedCustomer', ['id' => '', 'label' => 'Choose a registered customer']);
+            $view->with('selectedCustomer', ['id' => '', 'label' => 'No customer chosen', 'detail' => 'Orders need a registered customer']);
         }
 
         return $view;
