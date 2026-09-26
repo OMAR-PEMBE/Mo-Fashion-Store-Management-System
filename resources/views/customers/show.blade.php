@@ -8,7 +8,7 @@
     };
     $phone = $international($customer->phone);
     $whatsapp = $international($customer->whatsapp_number) ?? $phone;
-    $average = $customer->total_purchases > 0 ? \Brick\Math\BigDecimal::of($customer->total_spent)->dividedBy($customer->total_purchases, 2, \Brick\Math\RoundingMode::HalfUp) : null;
+    $average = $customer->total_purchases > 0 ? \Brick\Math\BigDecimal::of($customer->total_spent)->dividedBy($customer->total_purchases, 0, \Brick\Math\RoundingMode::HalfUp) : null;
 @endphp
 <x-layouts.app :title="$customer->full_name">
     <x-page-header :title="$customer->full_name" :back="route('customers.index')" back-label="Customers"
