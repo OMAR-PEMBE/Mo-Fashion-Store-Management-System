@@ -15,11 +15,14 @@ class StaffController extends Controller
     {
         $service->authorize($request->user());
         $filters = $request->validate(['q' => ['nullable', 'string', 'max:150'], 'status' => ['nullable', Rule::in(['active', 'inactive'])], 'role_id' => ['nullable', 'integer']]);
-        $users = User::with('role')->when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$value.'%')->orWhere('email', 'like', '%'.$value.'%')))
-            ->when($filters['status'] ?? null, fn ($q, $value) => $q->where('is_active', $value === 'active'))
-            ->when($filters['role_id'] ?? null, fn ($q, $value) => $q->where('role_id', $value))->orderBy('name')->orderBy('id')->paginate(20)->withQueryString();
+        $query = User::when($filters['q'] ?? null, fn ($q, $value) => $q->where(fn ($q) => $q->where('name', 'like', '%'.$value.'%')->orWhere('email', 'like', '%'.$value.'%')))
+            ->when($filters['role_id'] ?? null, fn ($q, $value) => $q->where('role_id', $value));
+        $counts = (clone $query)->toBase()->selectRaw('is_active, count(*) as total')->groupBy('is_active')->pluck('total', 'is_active');
+        $counts = ['active' => (int) ($counts[1] ?? 0), 'inactive' => (int) ($counts[0] ?? 0)];
+        $users = $query->with('role')->when($filters['status'] ?? null, fn ($q, $value) => $q->where('is_active', $value === 'active'))
+            ->orderByDesc('is_active')->orderBy('name')->orderBy('id')->paginate(20)->withQueryString();
 
-        return view('staff.index', ['users' => $users, 'filters' => $filters, 'roles' => Role::orderBy('name')->get()]);
+        return view('staff.index', ['users' => $users, 'filters' => $filters, 'counts' => $counts, 'roles' => Role::orderBy('name')->get()]);
     }
 
     public function create(Request $request, StaffService $service)
@@ -66,7 +69,8 @@ class StaffController extends Controller
     {
         $service->authorize($request->user());
 
-        return view('staff.roles', ['roles' => Role::withCount('users')->orderBy('name')->get()]);
+        return view('staff.roles', ['roles' => Role::withCount(['users', 'permissions', 'users as active_users_count' => fn ($q) => $q->where('is_active', true)])->orderBy('name')->get(),
+            'total' => Permission::count()]);
     }
 
     public function editRole(Request $request, Role $role, StaffService $service)

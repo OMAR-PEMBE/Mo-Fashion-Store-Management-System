@@ -50,6 +50,19 @@ window.purchaseForm = (supplier, lines, lookupUrl) => ({
     },
 });
 
+// Temporary staff passwords: 12 characters without look-alikes (0/O, 1/l/I), always with
+// letters and numbers, grouped in threes so they are easy to read out.
+window.suggestPassword = () => {
+    const letters = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ';
+    const digits = '23456789';
+    const pick = (set, n) => Array.from(crypto.getRandomValues(new Uint32Array(n)), v => set[v % set.length]);
+    const chars = [...pick(letters, 7), ...pick(digits, 3), ...pick(letters + digits, 2)];
+    for (let i = chars.length - 1; i > 0; i--) {
+        const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+    }
+    return chars.join('').match(/.{3}/g).join('-');
+};
 // Opening stock count sheet: live totals, "same cost for every size", and a warning before
 // leaving the page with counts that have not been reviewed yet.
 window.openingSheet = () => ({

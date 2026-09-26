@@ -232,3 +232,34 @@ twelve equal-weight boxes, so it was hard to see how "Estimated Net Profit" was 
   source, and explains the method in a fold-out.
 - The explanation notes for list reports moved into an "About this report" fold-out.
 - CSV downloads are unchanged (same columns, exact values).
+
+## Admin: staff and access
+
+**Found:** permissions were listed A–Z under inconsistent machine names ("expenses.view",
+"Customers Create", "Refunds Approve") with no grouping or explanation, so the owner could
+not tell what ticking a box allows. Roles were bare cards. The staff list showed plain
+"Active"/"Inactive" text. The form hid the most important choice (role) in a dropdown,
+used a status dropdown, and made the owner invent a temporary password.
+
+**Changed:**
+- `App\Support\PermissionCatalog`: a plain name and one-line explanation for every
+  permission, grouped as Selling / Orders and customers / Returns and refunds / Stock and
+  catalogue / Money / Administration. Unknown future permissions still appear under
+  "Other".
+- Role page ("What a Salesperson can do"): the groups as cards with checkboxes and
+  explanations; administrator-only permissions are shown locked with a note; a warning on
+  the Administrator role to keep staff management on; "Save for every Salesperson".
+- Roles overview ("What each role can do"): a one-line summary per role, permissions
+  switched on out of the total, and how many people can sign in with it.
+- Staff list: initials, role badge (administrators highlighted), "Last signed in
+  2 hours ago" / "Never signed in", Can sign in / Switched off tabs with counts, role
+  filter that applies straight away, switched-off accounts dimmed and listed last,
+  "(you)" beside your own name.
+- Staff form: Person / Access / Temporary password / Confirm sections; roles as cards that
+  say what each can do; a "Can sign in" switch (locked on your own account, with the
+  reason); **Suggest one** creates a readable 12-character password without look-alike
+  characters (for example `twg-m9V-fvk-K52`), fills both boxes and shows it to pass on.
+  The same helper is on the reset-password panel ("Forgot their password?").
+- All password boxes on these screens have show/hide.
+- `lint-views` (scratchpad script) now compiles and syntax-checks all 79 views before
+  each commit, after the "letter before @if" Blade trap came back twice.

@@ -187,4 +187,15 @@ class StaffTest extends TestCase
         $this->app['env'] = 'local';
         $this->post('/users', $this->data())->assertStatus(419);
     }
+    public function test_access_screens_use_plain_permission_names_and_lock_admin_only_ones(): void
+    {
+        $salesperson = Role::where('slug', 'salesperson')->firstOrFail();
+        $page = $this->get('/roles/'.$salesperson->id.'/permissions')->assertOk()
+            ->assertSee('Change prices at the counter')->assertSee('Returns and refunds')->assertDontSee('Sales Override Price')->assertSee('Administrators only');
+        $this->assertMatchesRegularExpression('/value="'.Permission::where('slug', 'audit.view')->value('id').'"[^>]*disabled/', $page->getContent());
+        $this->assertDoesNotMatchRegularExpression('/value="'.Permission::where('slug', 'sales.create')->value('id').'"[^>]*disabled/', $page->getContent());
+        $this->get('/roles')->assertOk()->assertSee('What each role can do')->assertSee('of '.Permission::count().' permissions');
+        User::factory()->create(['role_id' => $salesperson->id, 'is_active' => false]);
+        $this->get('/users')->assertOk()->assertViewHas('counts', fn ($counts) => $counts['inactive'] === 1 && $counts['active'] >= 1)->assertSee('Switched off');
+    }
 }
