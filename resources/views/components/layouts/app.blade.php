@@ -56,13 +56,13 @@
             ['Expenses', route('expenses.index'), $user?->can('expenses.view'), request()->routeIs('expenses.*', 'expense-categories.*'), 'expenses'],
             ['Reports', route('reports.index'), $user?->can('reports.view'), request()->routeIs('reports.*'), 'reports'],
         ],
+        'Catalogue setup' => collect(\App\Enums\ReferenceType::cases())->map(fn ($type) => [$type->label(), route('reference.index', $type->value),
+            $user?->can('reference-data.manage'), request()->route('type') === $type, $referenceIcons[$type->value] ?? 'categories'])->all(),
         'Administration' => [
             ['Staff & access', route('users.index'), $isAdmin && $user->can('users.manage'), request()->routeIs('users.*', 'roles.*'), 'staff'],
             ['Business settings', route('settings.edit'), $isAdmin && $user->can('settings.manage'), request()->routeIs('settings.*'), 'settings'],
             ['Audit logs', route('audit.index'), $isAdmin && $user->can('audit.view'), request()->routeIs('audit.*'), 'audit'],
         ],
-        'Catalogue setup' => collect(\App\Enums\ReferenceType::cases())->map(fn ($type) => [$type->label(), route('reference.index', $type->value),
-            $user?->can('reference-data.manage'), request()->route('type') === $type, $referenceIcons[$type->value] ?? 'categories'])->all(),
     ];
 @endphp
 <!DOCTYPE html>
