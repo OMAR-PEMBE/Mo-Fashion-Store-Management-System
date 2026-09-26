@@ -52,8 +52,9 @@ class SaleController extends Controller
             }
             $lines[] = $line;
         }
-        $customerId = old('customer_id');
-        $customer = is_scalar($customerId) ? Customer::find($customerId) : null;
+        // "New sale for this customer" links pass ?customer=ID; a returning cart's own choice wins.
+        $customerId = old('customer_id', request()->query('customer'));
+        $customer = is_scalar($customerId) ? Customer::where('is_active', true)->find($customerId) : null;
         $selectedCustomer = ['id' => $customer?->id ?? '', 'label' => $customer?->full_name ?? 'Walk-in customer', 'detail' => $customer?->customer_code ?? ''];
         $requestKey = old('request_key', (string) Str::uuid());
 

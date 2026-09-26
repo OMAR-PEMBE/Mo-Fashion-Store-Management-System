@@ -101,7 +101,7 @@
             <section class="rounded-2xl border border-border bg-surface p-5 text-sm" aria-labelledby="customer-heading">
                 <h2 id="customer-heading" class="text-base font-semibold">Customer and delivery</h2>
                 <p class="mt-3 font-semibold break-words">{{ $order->customer->full_name }}</p>
-                @if($order->customer->phone)<p class="text-text-secondary">{{ $order->customer->phone }}</p>@endif
+                @if($order->customer->phone)<p class="text-text-secondary">{{ \App\Support\Phone::display($order->customer->phone) }}</p>@endif
                 <p class="mt-3 break-words">{{ $order->delivery_address ?: 'Collect from the shop (no delivery address).' }}</p>
                 @if($order->notes)<p class="mt-3 rounded-lg bg-background p-3 break-words">{{ $order->notes }}</p>@endif
             </section>

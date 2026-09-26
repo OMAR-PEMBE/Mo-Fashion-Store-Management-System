@@ -15,18 +15,22 @@ class CustomerController extends Controller
 {
     public function index(Request $request)
     {
-        $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'status' => ['nullable', Rule::in(['active', 'inactive'])]]);
+        $filters = $request->validate(['q' => ['nullable', 'string', 'max:191'], 'status' => ['nullable', Rule::in(['active', 'inactive'])], 'sort' => ['nullable', Rule::in(['name', 'spent', 'recent'])]]);
         $search = $filters['q'] ?? '';
         $digits = preg_replace('/\D/', '', $search);
         if (str_starts_with($digits, '00')) {
             $digits = substr($digits, 2);
         }
-        $customers = Customer::query()->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('full_name', 'like', '%'.$search.'%')->orWhere('customer_code', 'like', '%'.$search.'%')
-            ->when($digits !== '', fn ($q) => $q->orWhere('phone', 'like', '%'.$digits.'%')->orWhere('whatsapp_number', 'like', '%'.$digits.'%'))))
-            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('is_active', $status === 'active'))
+        $matching = Customer::query()->when($search !== '', fn ($q) => $q->where(fn ($q) => $q->where('full_name', 'like', '%'.$search.'%')->orWhere('customer_code', 'like', '%'.$search.'%')
+            ->when($digits !== '', fn ($q) => $q->orWhere('phone', 'like', '%'.$digits.'%')->orWhere('whatsapp_number', 'like', '%'.$digits.'%'))));
+        $counts = ['active' => (clone $matching)->where('is_active', true)->count(), 'inactive' => (clone $matching)->where('is_active', false)->count()];
+        // Top spenders and most recent buyers help the owner follow up; name order stays the default.
+        $customers = (clone $matching)->when($filters['status'] ?? null, fn ($q, $status) => $q->where('is_active', $status === 'active'))
+            ->when(($filters['sort'] ?? 'name') === 'spent', fn ($q) => $q->orderByDesc('total_spent'))
+            ->when(($filters['sort'] ?? 'name') === 'recent', fn ($q) => $q->orderByRaw('last_purchase_at IS NULL')->orderByDesc('last_purchase_at'))
             ->orderBy('full_name')->orderBy('id')->paginate(15)->withQueryString();
 
-        return view('customers.index', compact('customers', 'filters'));
+        return view('customers.index', compact('customers', 'filters', 'counts'));
     }
 
     public function create()

@@ -119,6 +119,18 @@ class CounterPricingTest extends TestCase
         $this->assertFalse($this->staff->fresh()->hasPermission('sales.override_price'));
     }
 
+    public function test_customer_page_starts_a_sale_with_that_active_customer_selected(): void
+    {
+        $customer = app(CustomerService::class)->save(['full_name' => 'Amina Juma', 'phone' => '0755 123 456'], $this->admin);
+        $link = route('sales.create', ['customer' => $customer->id]);
+        $this->actingAs($this->staff)->get('/customers/'.$customer->id)->assertOk()->assertSee($link, false)
+            ->assertSee('https://wa.me/255755123456', false)->assertSee('tel:+255755123456', false);
+        $this->get($link)->assertOk()->assertViewHas('selectedCustomer', fn ($selected) => $selected['id'] === $customer->id && $selected['label'] === 'Amina Juma');
+
+        $customer->forceFill(['is_active' => false])->save();
+        $this->get($link)->assertOk()->assertViewHas('selectedCustomer', fn ($selected) => $selected['id'] === '');
+    }
+
     public function test_counter_screen_gets_product_details_and_can_register_customers_inline(): void
     {
         DB::table('inventories')->where('product_variant_id', $this->variant->id)->update(['physical_quantity' => 2]);

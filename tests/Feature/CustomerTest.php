@@ -71,7 +71,7 @@ class CustomerTest extends TestCase
     {
         $salesperson = User::factory()->create(['role_id' => Role::where('slug', 'salesperson')->value('id')]);
         $this->actingAs($salesperson);
-        $this->get('/customers')->assertOk()->assertSee('Quick create');
+        $this->get('/customers')->assertOk()->assertSee('Quick add');
         $this->post('/customers', ['full_name' => 'Registered customer'])->assertSessionHasNoErrors();
         $customer = Customer::firstOrFail();
         $this->assertFalse($customer->marketing_opt_in);
@@ -129,7 +129,7 @@ class CustomerTest extends TestCase
     public function test_walk_in_foundation_does_not_seed_or_require_a_fake_customer(): void
     {
         $this->assertDatabaseCount('customers', 0);
-        $this->get('/customers')->assertSee('Walk-in sales will not require registration');
+        $this->get('/customers')->assertSee('Walk-in sales never need one.');
         $this->assertDatabaseCount('customers', 0);
         // The actual nullable sale.customer_id contract is tested with Phase 10 sales.
     }
