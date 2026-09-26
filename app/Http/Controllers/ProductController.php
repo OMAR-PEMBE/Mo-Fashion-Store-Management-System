@@ -63,7 +63,8 @@ class ProductController extends Controller
         Gate::authorize('create', Product::class);
         $product = $service->saveProduct($request->all(), $request->user());
 
-        return redirect()->route('products.show', $product)->with('status', 'Product created. Add its size and colour variants below.');
+        // The button says "Save and add sizes", so go straight to the first size and colour.
+        return redirect()->route('variants.create', $product)->with('status', $product->name.' saved as '.$product->product_code.'. Now add its first size and colour.');
     }
 
     public function show(Request $request, Product $product): View

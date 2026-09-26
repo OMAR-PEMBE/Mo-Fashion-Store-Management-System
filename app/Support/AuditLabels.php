@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -60,6 +61,14 @@ class AuditLabels
         'system_settings' => ['Business settings', 'settings.edit'],
     ];
 
+    /** Fields that store another record's id, and where its readable name lives. */
+    private const REFERENCES = [
+        'size_id' => ['sizes', 'name'], 'colour_id' => ['colours', 'name'], 'category_id' => ['categories', 'name'],
+        'expense_category_id' => ['expense_categories', 'name'], 'supplier_id' => ['suppliers', 'name'],
+        'customer_id' => ['customers', 'full_name'], 'role_id' => ['roles', 'name'], 'preferred_size_id' => ['sizes', 'name'],
+        'preferred_colour_id' => ['colours', 'name'],
+    ];
+
     public static function action(?string $code): string
     {
         return self::ACTIONS[$code] ?? Str::of((string) $code)->lower()->replace('_', ' ')->ucfirst()->toString();
@@ -93,6 +102,17 @@ class AuditLabels
         }
 
         return $id ? route($route, $id) : null;
+    }
+
+    /** "UAT Black" instead of "13" for id fields; other values are returned unchanged. */
+    public static function value(string $field, ?string $value): ?string
+    {
+        if ($value === null || ! isset(self::REFERENCES[$field]) || ! ctype_digit($value)) {
+            return $value;
+        }
+        [$table, $column] = self::REFERENCES[$field];
+
+        return DB::table($table)->where('id', (int) $value)->value($column) ?? '#'.$value.' (no longer exists)';
     }
 
     public static function field(string $key): string

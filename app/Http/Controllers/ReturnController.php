@@ -73,8 +73,16 @@ class ReturnController extends Controller
     public function complete(Request $request, SaleReturn $return, ReturnService $service)
     {
         $service->complete($return, $request->user());
+        // Say what actually happened: damaged or faulty items stay out of stock.
+        $items = $return->items()->get();
+        $restocked = (int) $items->where('returned_to_stock', true)->sum('quantity');
+        $kept = (int) $items->where('returned_to_stock', false)->sum('quantity');
+        $parts = array_filter([
+            $restocked ? $restocked.' '.str('item')->plural($restocked).' back in stock' : null,
+            $kept ? $kept.' '.str('item')->plural($kept).' kept out of stock (not sellable)' : null,
+        ]);
 
-        return back()->with('status', 'Return completed. Sellable items restored to stock. No refund issued.');
+        return back()->with('status', 'Return completed: '.implode('; ', $parts).'. No refund issued yet.');
     }
 
     public function reject(Request $request, SaleReturn $return, ReturnService $service)

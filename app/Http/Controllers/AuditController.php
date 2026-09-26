@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\AuditService;
+use App\Support\AuditLabels;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,7 +53,8 @@ class AuditController extends Controller
         foreach (array_unique(array_merge(array_keys($decoded['old_values'] ?? []), array_keys($decoded['new_values'] ?? []))) as $key) {
             $before = $show($decoded['old_values'][$key] ?? null);
             $after = $show($decoded['new_values'][$key] ?? null);
-            $rows[] = ['field' => (string) $key, 'before' => $before, 'after' => $after, 'changed' => $decoded['old_values'] !== null && $before !== $after];
+            $rows[] = ['field' => (string) $key, 'before' => AuditLabels::value((string) $key, $before), 'after' => AuditLabels::value((string) $key, $after),
+                'changed' => $decoded['old_values'] !== null && $before !== $after];
         }
         $hasBefore = $decoded['old_values'] !== null;
 

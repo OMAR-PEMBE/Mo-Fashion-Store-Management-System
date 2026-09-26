@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Colour;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -171,5 +172,13 @@ class AdministrationTest extends TestCase
     {
         preg_match_all('/name="([a-z_]+)"/', $this->get('/settings')->assertOk()->assertSee('Receipt preview')->getContent(), $matches);
         $this->assertEqualsCanonicalizing([], array_diff(array_keys($this->data()), $matches[1]));
+    }
+    public function test_activity_log_shows_names_instead_of_record_numbers(): void
+    {
+        $black = Colour::where('code', 'BLACK')->firstOrFail();
+        $white = Colour::where('code', 'WHITE')->firstOrFail();
+        app(AuditService::class)->record($this->admin, 'CORRECT_VARIANT_ATTRIBUTES', 'product_variant', 1, ['colour_id' => $black->id, 'size_id' => null], ['colour_id' => $white->id, 'size_id' => 999999]);
+        $id = DB::table('audit_logs')->where('action', 'CORRECT_VARIANT_ATTRIBUTES')->value('id');
+        $this->get('/audit-logs/'.$id)->assertOk()->assertSee($black->name)->assertSee($white->name)->assertSee('#999999 (no longer exists)');
     }
 }

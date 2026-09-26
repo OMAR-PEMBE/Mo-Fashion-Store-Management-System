@@ -46,6 +46,7 @@ to enter manually. Copy the actual reference displayed by the application.
 
 | Alias | Meaning | Actual reference |
 | --- | --- | --- |
+| Jeans / Dress product codes | Filled in automatically in UAT-01 | |
 | P1 | Initial 10 Jeans purchase | |
 | P2 | 10 Jeans + 10 Dresses purchase | |
 | S1 | Walk-in sale: 3 Jeans | |
@@ -69,20 +70,40 @@ completing this table. Stock figures refer only to the new UAT variants.
 
 | Metric | Expected | Observed |
 | --- | ---: | --- |
-| Gross sales (TZS) | 225,000 | |
-| Completed refunds (TZS) | 90,000 | |
+| Sales (TZS) | 225,000 | |
+| Refunds paid back (TZS) | 90,000 | |
 | Extra exchange payment (TZS) | 5,000 | |
 | Net sales (TZS) | 140,000 | |
-| Adjusted COGS (TZS) | 105,000 | |
+| Cost of goods sold (TZS) | 105,000 | |
 | Gross profit (TZS) | 35,000 | |
 | Operating expenses (TZS) | 10,000 | |
-| Estimated Net Profit (TZS) | 25,000 | |
-| Jeans physical / reserved / available | 17 / 0 / 17 | |
-| Dress physical / reserved / available | 9 / 0 / 9 | |
-| Jeans / Dress WAC (TZS) | 25,000 / 30,000 | |
+| Estimated net profit (TZS) | 25,000 | |
+| Jeans in the shop / held / ready to sell | 17 / 0 / 17 | |
+| Dress in the shop / held / ready to sell | 9 / 0 / 9 | |
+| Jeans / Dress average cost (TZS) | 25,000 / 30,000 | |
 | Total inventory value (TZS) | 695,000 | |
 | Original sale count | 2 | |
 | Customer gross spending (TZS) | 90,000 | |
+
+## Developer dry run (not acceptance)
+
+On 2026-09-26 the developer ran all twelve scenarios through the redesigned screens, as
+both roles, on a separate empty practice database (not `mfbms`), to make sure the guide
+matches the screens and the expected figures hold. **This does not replace the owner's
+and staff's acceptance, and the scenario results above stay PENDING.**
+
+- All 12 scenarios produced the expected figures: P1 200,000; P2 600,000; S1 135,000;
+  S2 90,000; refunds 2 × 45,000; exchange +5,000; expense 10,000; net sales 140,000; cost
+  of goods sold 105,000; gross profit 35,000; **net profit 25,000**; final stock 17 Jeans /
+  9 Dresses, nothing held. Dashboard and reports agreed. Every salesperson-restricted
+  address was refused, overselling was blocked, and the reservation was released.
+- Three issues were found and fixed before handing over, each with an automated test:
+  1. **Save and add sizes** opened the product page instead of the size form. It now opens
+     the size/colour form.
+  2. Completing a **damaged** return said "Sellable items restored to stock". It now says
+     exactly what happened ("1 item kept out of stock (not sellable)").
+  3. The activity log showed a colour change as record numbers ("13 → 2"). It now shows
+     names ("UAT Black → White").
 
 ## Defects and retests
 
@@ -120,7 +141,7 @@ Owner's decision on remaining notes:
 | Explicit acceptance: PASS / FAIL / PASS WITH NOTES | PENDING |
 
 Known scope limits to review: manual payments, disabled completed-sale cancellation,
-no product-image uploads, no public/provider integrations, and current store details
+no product-image uploads, WhatsApp receipts in test mode only (not sent until Phase B), and current store details
 on sale summaries rather than immutable historical receipt headers. Deployment,
 real mail delivery and backup restoration have separate later checks. Record any
 limitation that prevents store use as an issue; do not silently accept it.

@@ -458,4 +458,10 @@ class ProductCatalogueTest extends TestCase
         $this->assertSame(['JEA-100', 'Renamed'], [$product->fresh()->product_code, $product->fresh()->name]);
         $this->put('/products/'.$product->id, $this->productData(['product_code' => '']))->assertSessionHasErrors('product_code');
     }
+    public function test_save_and_add_sizes_opens_the_first_size_form(): void
+    {
+        $response = $this->post('/products', $this->productData());
+        $product = Product::where('product_code', 'JEANS-001')->firstOrFail();
+        $response->assertRedirect(route('variants.create', $product))->assertSessionHas('status', 'Boyfriend Jeans saved as JEANS-001. Now add its first size and colour.');
+    }
 }

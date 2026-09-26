@@ -282,4 +282,15 @@ class ReturnTest extends TestCase
         $this->assertArrayNotHasKey('unit_cost', $return->items->first()->toArray());
         $this->get('/returns/'.$return->id)->assertOk();
     }
+    public function test_completion_message_says_what_went_back_into_stock(): void
+    {
+        $sale = $this->sale();
+        $service = app(ReturnService::class);
+        foreach (['SELLABLE' => '1 item back in stock', 'DAMAGED' => '1 item kept out of stock (not sellable)'] as $condition => $expected) {
+            $return = $service->create($this->input($sale, 1, $condition, 'return:msg:'.$condition), $this->admin);
+            $service->approve($return, $this->admin);
+            $this->actingAs($this->admin)->post('/returns/'.$return->id.'/complete')
+                ->assertSessionHas('status', 'Return completed: '.$expected.'. No refund issued yet.');
+        }
+    }
 }

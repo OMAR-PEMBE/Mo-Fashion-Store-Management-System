@@ -56,3 +56,12 @@ check verified local MySQL connectivity. Actual owner acceptance is still pendin
 The current local database contains entered stock, so it cannot be assumed to be
 an empty practice baseline. Asked the owner whether this is real or practice data
 before preparing the acceptance environment. No transactions were inserted/reset.
+
+## Walkthrough refreshed after the redesign — 2026-09-26
+
+The [walkthrough](UAT_GUIDE.md) now matches the redesigned screens (automatic product and
+supplier codes, **Receive stock**, **Review sale**, **Full amount**, the profit statement,
+the activity log). The developer dry-ran all twelve scenarios on a separate empty
+database: every expected figure matched (net profit 25,000), and three issues found on the
+way were fixed with tests (see [results sheet](UAT_RESULTS.md#developer-dry-run-not-acceptance)).
+Owner/staff execution and sign-off remain **PENDING**.
